@@ -1,4 +1,6 @@
-const BACKEND_URL = 'http://localhost:3000'; // Change to your deployed backend URL
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  'https://habittrackerv2-production.up.railway.app';
 
 export async function registerUser(username: string, password: string) {
   try {
