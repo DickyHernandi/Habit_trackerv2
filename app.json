@@ -25,6 +25,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "notification": {
+        "icon": "./assets/images/icon.png",
+        "color": "#ffffff"
+      },
       "predictiveBackGestureEnabled": false,
       "package": "com.shell.HabitTracker",
       "permissions": [
@@ -54,10 +58,7 @@
       ],
       "expo-notifications"
     ],
-    "notification": {
-      "icon": "./assets/images/icon.png",
-      "color": "#ffffff"
-    },
+    
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
