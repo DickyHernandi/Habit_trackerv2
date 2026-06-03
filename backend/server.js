@@ -1,9 +1,12 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './authRoutes.js';
 
-dotenv.config();
+const fileDir = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(fileDir, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;

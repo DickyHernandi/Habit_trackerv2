@@ -30,6 +30,19 @@ Simple Node.js + Express backend for user authentication.
    npm run dev      # Development (auto-reload)
    ```
 
+5. **Generate Railway secret value**
+   ```bash
+   npm run encode-service-account
+   ```
+
+   Copy the printed value into your Railway environment as `SERVICE_ACCOUNT_BASE64`.
+
+## Railway deployment notes
+
+- Do not rely on `serviceAccountKey.json` being present during deployment.
+- Use Railway secrets to store `SERVICE_ACCOUNT_BASE64`.
+- If you prefer to deploy with a file, upload it through Railway's file/secret management instead of committing it to Git.
+
 ## API Endpoints
 
 ### Register
