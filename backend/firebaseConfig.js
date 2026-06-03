@@ -27,23 +27,26 @@ candidates.forEach((p) => console.log(`  - ${p} => ${fs.existsSync(p) ? 'FOUND' 
 
 // choose first existing candidate as localPath
 const localPath = candidates.find(p => fs.existsSync(p));
-const envKey = process.env.SERVICE_ACCOUNT_BASE64?.trim();
+const envKey = process.env.SERVICE_ACCOUNT_BASE64?.trim() ?? process.env.SERVICE_ACCOUNT_JSON?.trim();
 let envError = null;
 
 if (envKey) {
   try {
-    const decoded = Buffer.from(envKey, 'base64').toString('utf8');
+    const decoded = envKey.startsWith('{')
+      ? envKey
+      : Buffer.from(envKey, 'base64').toString('utf8');
     serviceAccount = JSON.parse(decoded);
-    // write it to file so admin SDK can use it if needed
+    // write it to disk so local file-based tooling can also work
     try {
-      const writePath = localPath ?? path.resolve(fileDir, 'serviceAccountKey.json');
+      const writePath = path.resolve(fileDir, 'serviceAccountKey.json');
       fs.writeFileSync(writePath, JSON.stringify(serviceAccount, null, 2), { encoding: 'utf8', flag: 'w' });
+      console.log(`DEBUG: wrote serviceAccountKey.json to ${writePath}`);
     } catch (err) {
       console.warn('Warning: failed to write serviceAccountKey.json to disk:', err.message);
     }
   } catch (err) {
     envError = err;
-    console.warn('Warning: Invalid SERVICE_ACCOUNT_BASE64 value:', err.message);
+    console.warn('Warning: Invalid SERVICE_ACCOUNT_BASE64/JSON value:', err.message);
     if (localPath) {
       console.warn('Falling back to local serviceAccountKey.json file.');
     }
@@ -61,10 +64,10 @@ if (!serviceAccount) {
     }
   } else {
     if (envError) {
-      console.error('Invalid SERVICE_ACCOUNT_BASE64 value and no local serviceAccountKey.json found.');
-      console.error('Please fix SERVICE_ACCOUNT_BASE64 or add backend/serviceAccountKey.json.');
+      console.error('Invalid SERVICE_ACCOUNT_BASE64/JSON value and no local serviceAccountKey.json found.');
+      console.error('Please fix SERVICE_ACCOUNT_BASE64/JSON or add backend/serviceAccountKey.json.');
     } else {
-      console.error('ERROR: serviceAccountKey.json not found in any expected locations and SERVICE_ACCOUNT_BASE64 not set.');
+      console.error('ERROR: serviceAccountKey.json not found in any expected locations and SERVICE_ACCOUNT_BASE64/JSON not set.');
       console.error('Checked locations:\n' + candidates.join('\n'));
     }
     process.exit(1);
@@ -77,3 +80,19 @@ admin.initializeApp({
 
 export const db = admin.firestore();
 export default admin;
+
+// Additional debug info to help diagnose authentication issues
+try {
+  console.log('DEBUG: serviceAccount.project_id =', serviceAccount.project_id);
+  console.log('DEBUG: serviceAccount.client_email =', serviceAccount.client_email);
+} catch (err) {
+  console.warn('DEBUG: failed to read serviceAccount fields:', err.message);
+}
+
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  console.log('DEBUG: GOOGLE_APPLICATION_CREDENTIALS is set to', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+} else {
+  console.log('DEBUG: GOOGLE_APPLICATION_CREDENTIALS is not set');
+}
+
+console.log('DEBUG: FIREBASE_PROJECT_ID env =', process.env.FIREBASE_PROJECT_ID);
