@@ -1,19 +1,35 @@
 import { router } from 'expo-router';
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { db } from '../../services/firebase';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const TYPE_COLOR: Record<string, string> = {
   timed: '#4C9A2A',
   progress: '#2563EB'
 };
 
+// Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
+const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
+
 export default function HomeScreen() {
   const [habits, setHabits] = useState<any[]>([]);
+  const [now, setNow] = useState(Date.now());
+  const userId = useAuthStore(state => state.userId);
 
   useEffect(() => {
-    const q = query(collection(db, 'habits'), orderBy('createdAt', 'desc'));
+    if (!userId) {
+      setHabits([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'habits'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
     const unsub = onSnapshot(q, snapshot => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -23,6 +39,14 @@ export default function HomeScreen() {
     });
 
     return () => unsub();
+  }, [userId]);
+
+  // Update current time for cooldown calculations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const completedCount = useMemo(
@@ -31,6 +55,22 @@ export default function HomeScreen() {
   );
 
   const progressPercent = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
+
+  const getHabitStatus = (habit: any) => {
+    if (habit.type !== 'progress') {
+      return 'Active';
+    }
+
+    const completedAt = Number(habit?.completedAt) || 0;
+    const failedAt = Number(habit?.failedAt) || 0;
+    const lastEndTime = completedAt > 0 ? completedAt : failedAt;
+
+    if (lastEndTime > 0 && (now - lastEndTime) < PROGRESS_HABIT_COOLDOWN_MS) {
+      return 'Cooldown';
+    }
+
+    return habit.completed || habit.failed ? 'Ready' : 'Active';
+  };
 
   const isHabitCompleted = (habit: any) => habit.type === 'progress' && Boolean(habit.completed);
 
@@ -84,7 +124,7 @@ export default function HomeScreen() {
             {item.target ? <Text style={styles.habitText}>Target: {item.target}</Text> : null}
 
             <View style={styles.cardFooter}>
-              <Text style={styles.completionText}>{isHabitCompleted(item) ? 'Completed' : 'Active'}</Text>
+              <Text style={styles.completionText}>{getHabitStatus(item)}</Text>
               <Pressable onPress={() => deleteDoc(doc(db, 'habits', item.id))} style={styles.deleteButton}>
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Pressable>

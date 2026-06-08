@@ -8,6 +8,7 @@ import {
     getProgressReminderWindowMs,
     scheduleProgressHabitNotifications
 } from '../services/notificationService';
+import { getCurrentUserId } from '../services/userService';
 
 export default function AddHabitScreen() {
   const [name, setName] = useState('');
@@ -38,12 +39,14 @@ export default function AddHabitScreen() {
       const progressStartAt = type === 'progress' ? createdAtMs + getProgressCheckpointDelayMs() : null;
 
       const habitRef = await addDoc(collection(db, 'habits'), {
+        userId: getCurrentUserId(),
         name,
         type,
         duration: type === 'timed' ? Number(duration) : null,
         target: type === 'progress' ? Number(target) : null,
         checkpointTarget,
         completedCheckpoint: 0,
+        attemptedCheckpoints: 0,
         totalCheckpoint: type === 'progress' ? 5 : null,
         completed: false,
         failed: false,
@@ -51,7 +54,9 @@ export default function AddHabitScreen() {
         createdAt: new Date(createdAtMs),
         notificationIds: [],
         checkpointAvailableAt: progressStartAt,
-        checkpointReminderDeadlineAt: type === 'progress' && progressStartAt !== null ? progressStartAt + getProgressReminderWindowMs() : null
+        checkpointReminderDeadlineAt: type === 'progress' && progressStartAt !== null ? progressStartAt + getProgressReminderWindowMs() : null,
+        completedAt: null,
+        failedAt: null
       });
 
       if (type === 'progress' && progressStartAt) {

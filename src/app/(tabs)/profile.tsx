@@ -3,20 +3,24 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { db } from '../../services/firebase';
-import { CURRENT_USER_ID } from '../../services/userService';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
-  const { clearAuth } = useAuthStore();
+  const { clearAuth, userId } = useAuthStore();
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'users', CURRENT_USER_ID), snapshot => {
+    if (!userId) {
+      setUser(null);
+      return;
+    }
+
+    const unsub = onSnapshot(doc(db, 'users', userId), snapshot => {
       setUser(snapshot.data());
     });
 
     return () => unsub();
-  }, []);
+  }, [userId]);
 
   function handleLogout() {
     Alert.alert('Logout', 'Are you sure you want to logout?', [

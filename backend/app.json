@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "1f5bda7c-a550-4390-bc08-8934be84ea7d"
+      }
+    },
+    "android": {
+      "package": "com.daedra007.habittrackerv2"
+    }
+  }
+}

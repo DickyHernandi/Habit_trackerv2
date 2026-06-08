@@ -6,7 +6,10 @@ import { addUserPoints } from '../services/gamificationService';
 import { saveHistory } from '../services/historyService';
 import { cancelScheduledNotifications, getProgressNextCheckpointDelayMs, getProgressReminderWindowMs, scheduleProgressHabitNotifications } from '../services/notificationService';
 import { getStreakBonus, updateUserStreak } from '../services/streakService';
-import { CURRENT_USER_ID } from '../services/userService';
+import { getCurrentUserId } from '../services/userService';
+
+// Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
+const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
 
 type Props = {
   habit: any;
@@ -42,31 +45,39 @@ function formatCountdown(ms: number) {
 function normalizeProgressHabit(habitData: any) {
   const checkpointAvailableAt = getNumber(habitData?.checkpointAvailableAt, 0);
   const checkpointReminderDeadlineAt = getNumber(habitData?.checkpointReminderDeadlineAt, 0);
+  const completedAt = getNumber(habitData?.completedAt, 0);
+  const failedAt = getNumber(habitData?.failedAt, 0);
   const totalCheckpoint = getTotalCheckpointCount(habitData);
   const checkpointStatus = typeof habitData?.checkpointStatus === 'string' ? habitData.checkpointStatus : 'pending';
 
   return {
     ...habitData,
     completedCheckpoint: getNumber(habitData?.completedCheckpoint, 0),
+    attemptedCheckpoints: getNumber(habitData?.attemptedCheckpoints, 0),
     checkpointTarget: getNumber(habitData?.checkpointTarget, 0),
     totalCheckpoint,
     checkpointStatus,
     failed: false,
     notificationIds: Array.isArray(habitData?.notificationIds) ? habitData.notificationIds : [],
     checkpointAvailableAt,
-    checkpointReminderDeadlineAt
+    checkpointReminderDeadlineAt,
+    completedAt,
+    failedAt
   };
 }
 
 async function persistProgressHabitState(habitId: string, nextHabit: any) {
   await updateDoc(doc(db, 'habits', habitId), {
     completedCheckpoint: getNumber(nextHabit.completedCheckpoint, 0),
+    attemptedCheckpoints: getNumber(nextHabit.attemptedCheckpoints, 0),
     completed: Boolean(nextHabit.completed),
     failed: Boolean(nextHabit.failed),
     checkpointStatus: nextHabit.checkpointStatus,
     notificationIds: Array.isArray(nextHabit.notificationIds) ? nextHabit.notificationIds : [],
     checkpointAvailableAt: nextHabit.checkpointAvailableAt ?? null,
-    checkpointReminderDeadlineAt: nextHabit.checkpointReminderDeadlineAt ?? null
+    checkpointReminderDeadlineAt: nextHabit.checkpointReminderDeadlineAt ?? null,
+    completedAt: nextHabit.completedAt ?? null,
+    failedAt: nextHabit.failedAt ?? null
   });
 }
 
@@ -117,11 +128,36 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       return;
     }
 
-    if (latestHabit.completedCheckpoint >= getTotalCheckpointCount(latestHabit)) {
+    if (latestHabit.attemptedCheckpoints >= getTotalCheckpointCount(latestHabit)) {
       return;
     }
 
+    const newAttempted = latestHabit.attemptedCheckpoints + 1;
+    const totalCheckpoint = getTotalCheckpointCount(latestHabit);
+    const isCompleted = newAttempted >= totalCheckpoint;
+
     await cancelScheduledNotifications(latestHabit.notificationIds);
+
+    if (isCompleted) {
+      // All checkpoints have been attempted, mark as completed (failed state)
+      const nextHabit = {
+        ...latestHabit,
+        attemptedCheckpoints: newAttempted,
+        completed: true,
+        failed: true,
+        checkpointStatus: 'pending',
+        notificationIds: [],
+        checkpointAvailableAt: null,
+        checkpointReminderDeadlineAt: null,
+        failedAt: Date.now()
+      };
+
+      await persistProgressHabitState(latestHabit.id, nextHabit);
+      setHabit(nextHabit);
+
+      Alert.alert('Checkpoint missed', 'All checkpoints have been attempted. This habit is now marked as failed.');
+      return;
+    }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
     const reminderIds = await scheduleProgressHabitNotifications(
@@ -135,6 +171,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     const nextHabit = {
       ...latestHabit,
+      attemptedCheckpoints: newAttempted,
       checkpointStatus: 'missed',
       completed: false,
       failed: false,
@@ -163,40 +200,44 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const newCheckpoint = normalizedHabit.completedCheckpoint + 1;
+    const newAttempted = normalizedHabit.attemptedCheckpoints + 1;
     const totalCheckpoint = getTotalCheckpointCount(normalizedHabit);
-    const isCompleted = newCheckpoint >= totalCheckpoint;
+    const isCompleted = newAttempted >= totalCheckpoint;
     const earnedPoints = 10;
 
     if (isCompleted) {
-      const nextStreak = await updateUserStreak(CURRENT_USER_ID);
+      const nextStreak = await updateUserStreak(getCurrentUserId());
       const streakBonus = getStreakBonus(nextStreak);
-      const finalEarnedPoints = earnedPoints + streakBonus;
+      const baseCheckpointPoints = newCheckpoint * earnedPoints;
+      const finalEarnedPoints = baseCheckpointPoints + streakBonus;
 
       await cancelScheduledNotifications(normalizedHabit.notificationIds);
-      await addUserPoints(CURRENT_USER_ID, finalEarnedPoints);
-      await saveHistory(CURRENT_USER_ID, normalizedHabit.name, normalizedHabit.type, finalEarnedPoints, 'completed');
+      await addUserPoints(getCurrentUserId(), finalEarnedPoints);
+      await saveHistory(getCurrentUserId(), normalizedHabit.name, normalizedHabit.type, finalEarnedPoints, 'completed');
 
       const nextHabit = {
         ...normalizedHabit,
         completedCheckpoint: newCheckpoint,
+        attemptedCheckpoints: newAttempted,
         completed: true,
         failed: false,
         checkpointStatus: 'pending',
         notificationIds: [],
         checkpointAvailableAt: null,
-        checkpointReminderDeadlineAt: null
+        checkpointReminderDeadlineAt: null,
+        completedAt: Date.now()
       };
 
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
 
-      Alert.alert('Berhasil', `Progress Habit selesai +${finalEarnedPoints} poin`);
+      Alert.alert('Congratulations!', `Progress Habit completed! You gained ${baseCheckpointPoints} points and streak bonus +${streakBonus} point.`);
       return;
     }
 
     await cancelScheduledNotifications(normalizedHabit.notificationIds);
-    await addUserPoints(CURRENT_USER_ID, earnedPoints);
-    await saveHistory(CURRENT_USER_ID, normalizedHabit.name, normalizedHabit.type, earnedPoints, 'completed');
+    await addUserPoints(getCurrentUserId(), earnedPoints);
+    await saveHistory(getCurrentUserId(), normalizedHabit.name, normalizedHabit.type, earnedPoints, 'completed');
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
     const reminderIds = await scheduleProgressHabitNotifications(
@@ -211,6 +252,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const nextHabit = {
       ...normalizedHabit,
       completedCheckpoint: newCheckpoint,
+      attemptedCheckpoints: newAttempted,
       completed: false,
       failed: false,
       checkpointStatus: 'pending',
@@ -228,7 +270,31 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       return;
     }
 
+    const newAttempted = normalizedHabit.attemptedCheckpoints + 1;
+    const totalCheckpoint = getTotalCheckpointCount(normalizedHabit);
+    const isCompleted = newAttempted >= totalCheckpoint;
+
     await cancelScheduledNotifications(normalizedHabit.notificationIds);
+
+    if (isCompleted) {
+      // All checkpoints have been attempted, mark as completed (failed state)
+      const nextHabit = {
+        ...normalizedHabit,
+        attemptedCheckpoints: newAttempted,
+        completed: true,
+        failed: true,
+        checkpointStatus: 'pending',
+        notificationIds: [],
+        checkpointAvailableAt: null,
+        checkpointReminderDeadlineAt: null,
+        failedAt: Date.now()
+      };
+
+      await persistProgressHabitState(normalizedHabit.id, nextHabit);
+      setHabit(nextHabit);
+      Alert.alert('Habit Failed', 'All checkpoints have been attempted. This habit is now marked as failed.');
+      return;
+    }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
     const reminderIds = await scheduleProgressHabitNotifications(
@@ -242,6 +308,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     const nextHabit = {
       ...normalizedHabit,
+      attemptedCheckpoints: newAttempted,
       checkpointStatus: 'missed',
       completed: false,
       failed: false,
@@ -256,10 +323,47 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     Alert.alert('Checkpoint missed', 'This checkpoint was skipped, but your progress habit is still active.');
   }
 
-  const progressPercent = Math.min(100, ((normalizedHabit.completedCheckpoint ?? 0) / getTotalCheckpointCount(normalizedHabit)) * 100);
+  const progressPercent = Math.min(100, ((normalizedHabit.attemptedCheckpoints ?? 0) / getTotalCheckpointCount(normalizedHabit)) * 100);
   const isCheckpointAvailable = now >= getNumber(normalizedHabit.checkpointAvailableAt, 0);
   const timeUntilCheckpoint = Math.max(0, getNumber(normalizedHabit.checkpointAvailableAt, 0) - now);
   const showMissedNotice = normalizedHabit.checkpointStatus === 'missed' && !isCheckpointAvailable;
+
+  // Cooldown logic
+  const completedAt = getNumber(normalizedHabit.completedAt, 0);
+  const failedAt = getNumber(normalizedHabit.failedAt, 0);
+  const lastEndTime = completedAt > 0 ? completedAt : failedAt;
+  const isInCooldown = lastEndTime > 0 && (now - lastEndTime) < PROGRESS_HABIT_COOLDOWN_MS;
+  const timeUntilRestart = Math.max(0, lastEndTime + PROGRESS_HABIT_COOLDOWN_MS - now);
+
+  async function resetProgressHabit() {
+    const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
+    const reminderIds = await scheduleProgressHabitNotifications(
+      normalizedHabit.id,
+      normalizedHabit.name,
+      normalizedHabit.checkpointTarget,
+      nextCheckpointAt,
+      'pending',
+      true
+    );
+
+    const resetHabit = {
+      ...normalizedHabit,
+      completedCheckpoint: 0,
+      attemptedCheckpoints: 0,
+      completed: false,
+      failed: false,
+      checkpointStatus: 'pending',
+      notificationIds: reminderIds,
+      checkpointAvailableAt: nextCheckpointAt,
+      checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
+      completedAt: null,
+      failedAt: null
+    };
+
+    await persistProgressHabitState(normalizedHabit.id, resetHabit);
+    setHabit(resetHabit);
+    Alert.alert('Success', 'Progress Habit has been reset. New checkpoints will start appearing soon.');
+  }
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.scrollContent}>
@@ -273,7 +377,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       <View style={styles.progressSection}>
         <View style={styles.progressCard}>
           <Text style={styles.progressLabel}>Progress</Text>
-          <Text style={styles.progressValue}>{normalizedHabit.completedCheckpoint ?? 0} / {getTotalCheckpointCount(normalizedHabit)}</Text>
+          <Text style={styles.progressValue}>{normalizedHabit.attemptedCheckpoints ?? 0} / {getTotalCheckpointCount(normalizedHabit)}</Text>
 
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
@@ -286,7 +390,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Checkpoint:</Text>
-              <Text style={styles.infoValue}>{normalizedHabit.completedCheckpoint + 1}</Text>
+              <Text style={styles.infoValue}>{normalizedHabit.attemptedCheckpoints + 1}</Text>
             </View>
           </View>
         </View>
@@ -324,6 +428,23 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
           <View style={styles.completedCard}>
             <Text style={styles.completedTitle}>All Done!</Text>
             <Text style={styles.completedSubtitle}>You've reached all {getTotalCheckpointCount(normalizedHabit)} checkpoints.</Text>
+          </View>
+        )}
+
+        {(normalizedHabit.completed || normalizedHabit.failed) && isInCooldown && (
+          <View style={styles.cooldownCard}>
+            <Text style={styles.cooldownTitle}>On Cooldown</Text>
+            <Text style={styles.cooldownSubtitle}>Next attempt available in {formatCountdown(timeUntilRestart)}</Text>
+          </View>
+        )}
+
+        {(normalizedHabit.completed || normalizedHabit.failed) && !isInCooldown && lastEndTime > 0 && (
+          <View style={styles.readyCard}>
+            <Text style={styles.readyTitle}>Ready to Continue!</Text>
+            <Text style={styles.readySubtitle}>You can start this habit again.</Text>
+            <Pressable style={styles.resetButton} onPress={resetProgressHabit}>
+              <Text style={styles.resetButtonText}>Start New Cycle</Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -521,5 +642,57 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 14,
     marginTop: 4
+  },
+  cooldownCard: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B'
+  },
+  cooldownTitle: {
+    color: '#92400E',
+    fontSize: 18,
+    fontWeight: '700'
+  },
+  cooldownSubtitle: {
+    color: '#B45309',
+    fontSize: 14,
+    marginTop: 4
+  },
+  readyCard: {
+    backgroundColor: '#DBEAFE',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6'
+  },
+  readyTitle: {
+    color: '#1E40AF',
+    fontSize: 18,
+    fontWeight: '700'
+  },
+  readySubtitle: {
+    color: '#2563EB',
+    fontSize: 14,
+    marginTop: 4,
+    marginBottom: 16
+  },
+  resetButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 8
+  },
+  resetButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center'
   }
 });

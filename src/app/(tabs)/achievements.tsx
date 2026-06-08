@@ -1,5 +1,5 @@
 import { db } from '@/services/firebase';
-import { CURRENT_USER_ID } from '@/services/userService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Link } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -7,15 +7,21 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function AchievementsScreen() {
   const [achievements, setAchievements] = useState<string[]>([]);
+  const userId = useAuthStore(state => state.userId);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, 'users', CURRENT_USER_ID), snapshot => {
+    if (!userId) {
+      setAchievements([]);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(doc(db, 'users', userId), snapshot => {
       const data = snapshot.data();
       setAchievements(Array.isArray(data?.achievements) ? data.achievements : []);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
   return (
     <View style={styles.page}>

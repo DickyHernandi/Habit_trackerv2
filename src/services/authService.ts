@@ -1,4 +1,9 @@
+import Constants from 'expo-constants';
+
 const BACKEND_URL =
+  // Prefer Expo runtime config for EAS builds
+  (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
+  // Fall back to environment variable (web/local) or the production URL
   process.env.BACKEND_URL ||
   'https://habittrackerv2-production.up.railway.app';
 

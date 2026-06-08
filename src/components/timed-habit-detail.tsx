@@ -4,7 +4,7 @@ import { addUserPoints } from '../services/gamificationService';
 import { saveHistory } from '../services/historyService';
 import { cancelScheduledNotification, showTimedHabitBackgroundWarning, showTimedHabitFailedNotification } from '../services/notificationService';
 import { getStreakBonus, updateUserStreak } from '../services/streakService';
-import { CURRENT_USER_ID } from '../services/userService';
+import { getCurrentUserId } from '../services/userService';
 
 type Props = {
   habit: any;
@@ -59,13 +59,14 @@ export function TimedHabitDetail({ habit }: Props) {
     backgroundWarningShown.current = false;
     backgroundTime.current = null;
 
-    const nextStreak = await updateUserStreak(CURRENT_USER_ID);
+    const nextStreak = await updateUserStreak(getCurrentUserId());
     const streakBonus = getStreakBonus(nextStreak);
-    const earnedPoints = habit.duration * 2 + streakBonus;
+    const basePoints = habit.duration * 2;
+    const earnedPoints = basePoints + streakBonus;
 
-    await addUserPoints(CURRENT_USER_ID, earnedPoints);
-    await saveHistory(CURRENT_USER_ID, habit.name, habit.type, earnedPoints, 'completed');
-    Alert.alert('Berhasil', `Timed Habit selesai +${earnedPoints} poin`);
+    await addUserPoints(getCurrentUserId(), earnedPoints);
+    await saveHistory(getCurrentUserId(), habit.name, habit.type, earnedPoints, 'completed');
+    Alert.alert('Congratulations!', `You have completed "${habit.name}". You gained ${basePoints} point and streak bonus +${streakBonus} point.`);
   }
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export function TimedHabitDetail({ habit }: Props) {
     timerNotificationId.current = null;
     backgroundWarningShown.current = false;
     backgroundTime.current = null;
-    await saveHistory(CURRENT_USER_ID, habit.name, habit.type, 0, 'failed');
+    await saveHistory(getCurrentUserId(), habit.name, habit.type, 0, 'failed');
     await showTimedHabitFailedNotification(habit.name);
     Alert.alert('Gagal', 'Kamu keluar aplikasi lebih dari 30 detik');
   }
