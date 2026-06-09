@@ -1,13 +1,24 @@
 import { db } from '@/services/firebase';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<any[]>([]);
+  const userId = useAuthStore(state => state.userId);
 
   useEffect(() => {
-    const q = query(collection(db, 'history'), orderBy('completedAt', 'desc'));
+    if (!userId) {
+      setHistory([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'history'),
+      where('userId', '==', userId),
+      orderBy('completedAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, snapshot => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -17,7 +28,7 @@ export default function HistoryScreen() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
   return (
     <View style={styles.page}>

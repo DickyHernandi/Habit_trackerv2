@@ -52,7 +52,7 @@ export function getProgressReminderWindowMs() {
   return PROGRESS_REMINDER_WINDOW_MS;
 }
 
-function getProgressNotificationTrigger(checkpointAvailableAt: number): Notifications.NotificationTriggerInput {
+function getProgressNotificationTrigger(checkpointAvailableAt: number): Notifications.NotificationTriggerInput | null {
   const now = Date.now();
   const delayMs = Math.max(0, checkpointAvailableAt - now);
 
@@ -145,8 +145,9 @@ export async function scheduleProgressHabitNotifications(
   if (granted) {
     try {
       await ensureProgressNotificationChannel();
-      const trigger = getProgressNotificationTrigger(resolvedCheckpointAvailableAt);
-      const notificationId = await Notifications.scheduleNotificationAsync({
+
+      const reminderTrigger = getProgressNotificationTrigger(resolvedCheckpointAvailableAt);
+      const reminderNotificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Progress Habit Reminder',
           body: `Have you completed ${checkpointTarget} for ${habitName}? You have ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} to confirm.`,
@@ -154,24 +155,50 @@ export async function scheduleProgressHabitNotifications(
           vibrate: [0, 250, 250, 250],
           data: {
             habitId,
-            reminderIndex: 0,
             type: 'progress-reminder'
           }
         },
-        trigger: trigger
+        trigger: reminderTrigger
           ? {
-              ...trigger,
+              ...reminderTrigger,
               channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
             }
           : null
       });
 
-      notificationIds.push(notificationId);
+      notificationIds.push(reminderNotificationId);
+
+      const deadlineAt = resolvedCheckpointAvailableAt + PROGRESS_REMINDER_WINDOW_MS;
+      const deadlineTrigger = getProgressNotificationTrigger(deadlineAt);
+      const deadlineNotificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Progress Habit Missed',
+          body: `You missed the checkpoint for ${habitName}. The next checkpoint will be scheduled automatically.`,
+          priority: 'max',
+          vibrate: [0, 250, 250, 250],
+          data: {
+            habitId,
+            type: 'progress-failure'
+          }
+        },
+        trigger: deadlineTrigger
+          ? {
+              ...deadlineTrigger,
+              channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
+            }
+          : null
+      });
+
+      notificationIds.push(deadlineNotificationId);
+
       console.log('Progress notification scheduled', {
         habitId,
-        notificationId,
+        reminderNotificationId,
+        deadlineNotificationId,
         resolvedCheckpointAvailableAt,
-        trigger
+        deadlineAt,
+        reminderTrigger,
+        deadlineTrigger
       });
 
       const allScheduled = await Notifications.getAllScheduledNotificationsAsync();

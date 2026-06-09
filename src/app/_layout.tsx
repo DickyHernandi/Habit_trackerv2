@@ -54,12 +54,20 @@ export default function RootLayout() {
       });
     });
 
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const habitId = response.notification.request.content.data?.habitId;
+      if (habitId) {
+        router.push(`/habit/${habitId}`);
+      }
+    });
+
     prepareSplash();
     initNotifications();
     checkAuth();
 
     return () => {
       receivedSubscription.remove();
+      responseSubscription.remove();
     };
   }, [restoreSession]);
 

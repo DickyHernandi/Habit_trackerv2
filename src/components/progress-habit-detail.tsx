@@ -236,8 +236,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     await cancelScheduledNotifications(normalizedHabit.notificationIds);
-    await addUserPoints(getCurrentUserId(), earnedPoints);
-    await saveHistory(getCurrentUserId(), normalizedHabit.name, normalizedHabit.type, earnedPoints, 'completed');
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
     const reminderIds = await scheduleProgressHabitNotifications(
