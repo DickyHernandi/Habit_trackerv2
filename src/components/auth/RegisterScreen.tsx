@@ -25,17 +25,17 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
 
   async function handleRegister() {
     if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Kesalahan', 'Silakan lengkapi semua bidang');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Kesalahan', 'Password tidak cocok');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert('Kesalahan', 'Password harus minimal 6 karakter');
       return;
     }
 
@@ -48,11 +48,11 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         const validation = await validateToken(result.token);
         if (validation.success) {
           setAuth(result.userId, result.username, result.token);
-          Alert.alert('Success', `Welcome ${result.username}!`);
+          Alert.alert('Berhasil', `Selamat datang, ${result.username}!`);
         }
       }
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message);
+      Alert.alert('Gagal Daftar', error.message);
     } finally {
       setLoading(false);
     }
@@ -62,12 +62,12 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formCard}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the habit tracker community</Text>
+          <Text style={styles.title}>Buat Akun</Text>
+          <Text style={styles.subtitle}>Bergabung dengan komunitas habit tracker</Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Choose a username"
+            placeholder="Pilih username"
             placeholderTextColor="#999"
             value={username}
             onChangeText={setUsername}
@@ -76,7 +76,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
 
           <TextInput
             style={styles.input}
-            placeholder="Password (min. 6 characters)"
+            placeholder="Password (min. 6 karakter)"
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
@@ -86,7 +86,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
 
           <TextInput
             style={styles.input}
-            placeholder="Confirm password"
+            placeholder="Konfirmasi password"
             placeholderTextColor="#999"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -102,13 +102,13 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={styles.registerButtonText}>Buat Akun</Text>
             )}
           </Pressable>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>atau</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -117,7 +117,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
             onPress={onSwitchToLogin}
             disabled={loading}
           >
-            <Text style={styles.loginLinkText}>Already have an account? <Text style={styles.loginLinkBold}>Login</Text></Text>
+            <Text style={styles.loginLinkText}>Sudah punya akun? <Text style={styles.loginLinkBold}>Masuk</Text></Text>
           </Pressable>
         </View>
       </ScrollView>

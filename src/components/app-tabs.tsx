@@ -15,7 +15,7 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Beranda</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: require('@/assets/images/tabIcons/home-default.png'),
@@ -26,7 +26,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="achievements">
-        <NativeTabs.Trigger.Label>Achievements</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Achievement</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: require('@/assets/images/tabIcons/achievements-default.png'),
@@ -48,7 +48,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="history">
-        <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Riwayat</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: require('@/assets/images/tabIcons/history-default.png'),
@@ -59,7 +59,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: require('@/assets/images/tabIcons/profile-default.png'),

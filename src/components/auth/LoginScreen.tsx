@@ -24,7 +24,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
 
   async function handleLogin() {
     if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter username and password');
+      Alert.alert('Kesalahan', 'Silakan masukkan username dan password');
       return;
     }
 
@@ -40,7 +40,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
         }
       }
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message);
+      Alert.alert('Gagal Masuk', error.message);
     } finally {
       setLoading(false);
     }
@@ -50,12 +50,12 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formCard}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Text style={styles.title}>Selamat Datang Kembali</Text>
+          <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Username"
+            placeholder="Nama pengguna"
             placeholderTextColor="#999"
             value={username}
             onChangeText={setUsername}
@@ -80,13 +80,13 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginButtonText}>Masuk</Text>
             )}
           </Pressable>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>atau</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -95,7 +95,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
             onPress={onSwitchToRegister}
             disabled={loading}
           >
-            <Text style={styles.signupLinkText}>Don't have an account? <Text style={styles.signupLinkBold}>Register</Text></Text>
+            <Text style={styles.signupLinkText}>Belum punya akun? <Text style={styles.signupLinkBold}>Daftar</Text></Text>
           </Pressable>
         </View>
       </ScrollView>

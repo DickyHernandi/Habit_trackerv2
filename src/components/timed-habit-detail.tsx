@@ -66,7 +66,7 @@ export function TimedHabitDetail({ habit }: Props) {
 
     await addUserPoints(getCurrentUserId(), earnedPoints);
     await saveHistory(getCurrentUserId(), habit.name, habit.type, earnedPoints, 'completed');
-    Alert.alert('Congratulations!', `You have completed "${habit.name}". You gained ${basePoints} point and streak bonus +${streakBonus} point.`);
+    Alert.alert('Selamat!', `Kamu telah menyelesaikan "${habit.name}". Kamu mendapatkan ${basePoints} poin dan bonus streak +${streakBonus} poin.`);
   }
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export function TimedHabitDetail({ habit }: Props) {
     backgroundTime.current = null;
     await saveHistory(getCurrentUserId(), habit.name, habit.type, 0, 'failed');
     await showTimedHabitFailedNotification(habit.name);
-    Alert.alert('Gagal', 'Kamu keluar aplikasi lebih dari 30 detik');
+    Alert.alert('Gagal', 'Kamu keluar aplikasi lebih dari 30 detik. Coba lagi.');
   }
 
   return (
@@ -119,22 +119,22 @@ export function TimedHabitDetail({ habit }: Props) {
 
       <View style={styles.timedSection}>
         <View style={styles.timerCard}>
-          <Text style={styles.timerLabel}>Time Remaining</Text>
+          <Text style={styles.timerLabel}>Waktu Tersisa</Text>
           <Text style={styles.timer}>
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </Text>
-          <Text style={styles.durationText}>Target: {habit.duration} minutes</Text>
+          <Text style={styles.durationText}>Target: {habit.duration} menit</Text>
         </View>
 
         {!running && (
           <Pressable style={styles.startButton} onPress={startTimer}>
-            <Text style={styles.startButtonText}>Start Timer</Text>
+            <Text style={styles.startButtonText}>Mulai Timer</Text>
           </Pressable>
         )}
 
         {running && (
           <View style={styles.runningCard}>
-            <Text style={styles.runningText}>Timer is running...</Text>
+            <Text style={styles.runningText}>Timer sedang berjalan...</Text>
           </View>
         )}
       </View>

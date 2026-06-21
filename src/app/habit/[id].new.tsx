@@ -100,7 +100,7 @@ export default function HabitDetail() {
   if (!habit) {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>Loading habit details...</Text>
+        <Text style={styles.loadingText}>Memuat detail habit...</Text>
       </View>
     );
   }
@@ -110,7 +110,7 @@ export default function HabitDetail() {
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.scrollContent}>
       <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={styles.backText}>← Kembali</Text>
       </Pressable>
 
       <View style={styles.headerCard}>
@@ -123,29 +123,29 @@ export default function HabitDetail() {
       {habit.type === 'timed' && (
         <View style={styles.timedSection}>
           <View style={styles.timerCard}>
-            <Text style={styles.timerLabel}>Time Remaining</Text>
+            <Text style={styles.timerLabel}>Waktu Tersisa</Text>
             <Text style={styles.timer}>
               {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
             </Text>
-            <Text style={styles.durationText}>Target: {habit.duration} minutes</Text>
+            <Text style={styles.durationText}>Target: {habit.duration} menit</Text>
           </View>
 
           {!running && !habit.completed && (
             <Pressable style={styles.startButton} onPress={startTimer}>
-              <Text style={styles.startButtonText}>Start Timer</Text>
+              <Text style={styles.startButtonText}>Mulai Timer</Text>
             </Pressable>
           )}
 
           {running && (
             <View style={styles.runningCard}>
-              <Text style={styles.runningText}>Timer is running...</Text>
+              <Text style={styles.runningText}>Timer berjalan...</Text>
             </View>
           )}
 
           {habit.completed && (
             <View style={styles.completedCard}>
-              <Text style={styles.completedTitle}>Completed!</Text>
-              <Text style={styles.completedSubtitle}>Great job! You've finished this habit.</Text>
+              <Text style={styles.completedTitle}>Selesai!</Text>
+              <Text style={styles.completedSubtitle}>Kerja bagus! Kamu telah menyelesaikan habit ini.</Text>
             </View>
           )}
         </View>
@@ -154,7 +154,7 @@ export default function HabitDetail() {
       {habit.type === 'progress' && (
         <View style={styles.progressSection}>
           <View style={styles.progressCard}>
-            <Text style={styles.progressLabel}>Progress</Text>
+            <Text style={styles.progressLabel}>Progres</Text>
             <Text style={styles.progressValue}>{habit.completedCheckpoint ?? 0} / 6</Text>
 
             <View style={styles.progressBarBg}>
@@ -163,7 +163,7 @@ export default function HabitDetail() {
 
             <View style={styles.targetInfo}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Daily Target:</Text>
+                <Text style={styles.infoLabel}>Target Harian:</Text>
                 <Text style={styles.infoValue}>{habit.target}</Text>
               </View>
               <View style={styles.infoRow}>
@@ -175,24 +175,24 @@ export default function HabitDetail() {
 
           <View style={styles.questionCard}>
             <Text style={styles.question}>
-              Have you completed {habit.checkpointTarget}?
+              Apakah kamu sudah menyelesaikan {habit.checkpointTarget}?
             </Text>
 
             {!habit.completed && (
               <View style={styles.buttonRow}>
                 <Pressable style={[styles.actionButton, styles.yesButton]} onPress={confirmCheckpoint}>
-                  <Text style={styles.buttonText}>Yes</Text>
+                  <Text style={styles.buttonText}>Ya</Text>
                 </Pressable>
                 <Pressable style={[styles.actionButton, styles.noButton]} onPress={rejectCheckpoint}>
-                  <Text style={styles.buttonText}>No</Text>
+                  <Text style={styles.buttonText}>Tidak</Text>
                 </Pressable>
               </View>
             )}
 
             {habit.completed && (
               <View style={styles.completedCard}>
-                <Text style={styles.completedTitle}>All Done!</Text>
-                <Text style={styles.completedSubtitle}>You've reached all 6 checkpoints.</Text>
+                <Text style={styles.completedTitle}>Selesai!</Text>
+                <Text style={styles.completedSubtitle}>Kamu telah mencapai semua 6 checkpoint.</Text>
               </View>
             )}
           </View>

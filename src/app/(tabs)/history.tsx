@@ -32,8 +32,8 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.page}>
-      <Text style={styles.title}>Completion History</Text>
-      <Text style={styles.subtitle}>Track habit outcomes, rewards, and failed attempts.</Text>
+      <Text style={styles.title}>Riwayat Penyelesaian</Text>
+      <Text style={styles.subtitle}>Lacak hasil habit, hadiah, dan kegagalan.</Text>
 
       <FlatList
         data={history}
@@ -53,12 +53,12 @@ export default function HistoryScreen() {
               <View style={styles.row}>
                 <Text style={styles.habitName}>{item.habitName}</Text>
                 <Text style={[styles.points, isFailed && styles.pointsFailed]}>
-                  {isFailed ? '0 pts' : `+${item.points ?? 0} pts`}
+                  {isFailed ? '0 poin' : `+${item.points ?? 0} poin`}
                 </Text>
               </View>
               <Text style={styles.meta}>{item.habitType}</Text>
               <Text style={[styles.meta, isFailed && styles.metaFailed]}>
-                {isFailed ? 'Failed' : 'Completed'}
+                {isFailed ? 'Gagal' : 'Selesai'}
               </Text>
               <Text style={styles.meta}>{completedAtText}</Text>
             </View>
@@ -66,7 +66,7 @@ export default function HistoryScreen() {
         }}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No history yet. Complete a habit to see it here.</Text>
+            <Text style={styles.emptyText}>Belum ada riwayat. Selesaikan habit untuk melihatnya di sini.</Text>
           </View>
         )}
       />

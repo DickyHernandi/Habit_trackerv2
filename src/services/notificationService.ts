@@ -22,8 +22,8 @@ const PROGRESS_NEXT_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
   : 4 * 60 * 60 * 1000;
 const PROGRESS_REMINDER_AMOUNT = 30;
 const PROGRESS_REMINDER_UNIT_MS = USE_PROGRESS_HABIT_TEST_TIMING ? 1000 : 60 * 1000;
-const PROGRESS_REMINDER_UNIT_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'second' : 'minute';
-const PROGRESS_REMINDER_UNIT_PLURAL_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'seconds' : 'minutes';
+const PROGRESS_REMINDER_UNIT_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
+const PROGRESS_REMINDER_UNIT_PLURAL_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
 const PROGRESS_REMINDER_WINDOW_MS = PROGRESS_REMINDER_AMOUNT * PROGRESS_REMINDER_UNIT_MS;
 const PROGRESS_NOTIFICATION_CHANNEL_ID = 'habit-progress-reminders';
 
@@ -77,7 +77,7 @@ async function ensureProgressNotificationChannel() {
   }
 
   await Notifications.setNotificationChannelAsync(PROGRESS_NOTIFICATION_CHANNEL_ID, {
-    name: 'Progress Habit Reminders',
+    name: 'Pengingat Progress Habit',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     enableLights: true,
@@ -150,7 +150,7 @@ export async function scheduleProgressHabitNotifications(
       const reminderNotificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Progress Habit Reminder',
-          body: `Have you completed ${checkpointTarget} for ${habitName}? You have ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} to confirm.`,
+          body: `Apakah kamu sudah menyelesaikan ${checkpointTarget} untuk ${habitName}? Kamu punya ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} untuk mengonfirmasi.`,
           priority: 'max',
           vibrate: [0, 250, 250, 250],
           data: {
@@ -173,7 +173,7 @@ export async function scheduleProgressHabitNotifications(
       const deadlineNotificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Progress Habit Missed',
-          body: `You missed the checkpoint for ${habitName}. The next checkpoint will be scheduled automatically.`,
+          body: `Kamu melewatkan checkpoint untuk ${habitName}. Checkpoint berikutnya akan dijadwalkan otomatis.`,
           priority: 'max',
           vibrate: [0, 250, 250, 250],
           data: {

@@ -1,10 +1,10 @@
 import {
-  TabList,
-  TabListProps,
-  Tabs,
-  TabSlot,
-  TabTrigger,
-  TabTriggerSlotProps,
+    TabList,
+    TabListProps,
+    Tabs,
+    TabSlot,
+    TabTrigger,
+    TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
@@ -23,13 +23,13 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+            <TabButton>Beranda</TabButton>
           </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
+            <TabButton>Jelajah</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton>Profil</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

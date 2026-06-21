@@ -1,5 +1,4 @@
-﻿import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+﻿import { SymbolView } from 'expo-symbols';
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,37 +39,37 @@ export default function TabTwoScreen() {
       contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
       <ThemedView style={styles.container}>
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore Ideas</ThemedText>
+          <ThemedText type="subtitle">Jelajah Ide</ThemedText>
           <ThemedText style={styles.centerText} themeColor="textSecondary">
-            Discover habit inspiration, planning advice, and simple routines to help you stay consistent.
+            Temukan inspirasi habit, tips perencanaan, dan rutinitas sederhana untuk membantu kamu tetap konsisten.
           </ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="Why small habits win">
+          <Collapsible title="Mengapa habit kecil menang">
             <ThemedText type="small">
-              Small daily actions are easier to keep up with and build momentum faster than big goals.
+              Tindakan kecil setiap hari lebih mudah dipertahankan dan membangun momentum lebih cepat daripada tujuan besar.
             </ThemedText>
           </Collapsible>
 
-          <Collapsible title="Habit ideas to try">
+          <Collapsible title="Ide habit untuk dicoba">
             <View style={styles.ideaList}>
-              <ThemedText type="small">• Morning stretch</ThemedText>
-              <ThemedText type="small">• Read 10 pages</ThemedText>
-              <ThemedText type="small">• Drink one glass of water</ThemedText>
+              <ThemedText type="small">• Peregangan pagi</ThemedText>
+              <ThemedText type="small">• Baca 10 halaman</ThemedText>
+              <ThemedText type="small">• Minum segelas air</ThemedText>
             </View>
           </Collapsible>
 
-          <Collapsible title="Consistency tips">
+          <Collapsible title="Tips konsistensi">
             <ThemedText type="small">
-              Keep your habits simple, track progress daily, and reward yourself for small wins.
+              Buat habitmu sederhana, lacak progres setiap hari, dan beri hadiah untuk kemenangan kecil.
             </ThemedText>
           </Collapsible>
 
           <ExternalLink href="https://docs.expo.dev" asChild>
             <Pressable style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}>
               <ThemedView type="backgroundElement" style={styles.linkButtonInner}>
-                <ThemedText type="link">Learn habit strategy</ThemedText>
+                <ThemedText type="link">Pelajari strategi habit</ThemedText>
                 <SymbolView
                   tintColor={theme.text}
                   name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}

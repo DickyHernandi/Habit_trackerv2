@@ -19,17 +19,17 @@ export default function AddHabitScreen() {
 
   async function saveHabit() {
     if (!name.trim()) {
-      Alert.alert('Oops', 'Please enter a habit name');
+      Alert.alert('Kesalahan', 'Silakan masukkan nama habit');
       return;
     }
 
     if (type === 'timed' && !duration.trim()) {
-      Alert.alert('Oops', 'Please enter duration in minutes');
+      Alert.alert('Kesalahan', 'Silakan masukkan durasi dalam menit');
       return;
     }
 
     if (type === 'progress' && !target.trim()) {
-      Alert.alert('Oops', 'Please enter a daily target');
+      Alert.alert('Kesalahan', 'Silakan masukkan target harian');
       return;
     }
 
@@ -67,30 +67,30 @@ export default function AddHabitScreen() {
         }
       }
 
-      Alert.alert('Success', 'Habit berhasil dibuat');
+      Alert.alert('Berhasil', 'Habit berhasil dibuat');
       router.back();
     } catch (error) {
       console.log(error);
-      Alert.alert('Error', 'Unable to save habit. Please try again.');
+      Alert.alert('Kesalahan', 'Gagal menyimpan habit. Silakan coba lagi.');
     }
   }
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Create New Habit</Text>
-      <Text style={styles.subtitle}>Set up a habit and keep your momentum going.</Text>
+      <Text style={styles.title}>Buat Habit Baru</Text>
+      <Text style={styles.subtitle}>Atur kebiasaan dan pertahankan momentummu.</Text>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Habit Name</Text>
+        <Text style={styles.label}>Nama Habit</Text>
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder="Enter habit name"
+          placeholder="Masukkan nama habit"
           placeholderTextColor="#9CA3AF"
           style={styles.input}
         />
 
-        <Text style={styles.label}>Habit Type</Text>
+        <Text style={styles.label}>Jenis Habit</Text>
         <View style={styles.toggleRow}>
           <Pressable
             onPress={() => setType('timed')}
@@ -108,7 +108,7 @@ export default function AddHabitScreen() {
 
         {type === 'timed' ? (
           <>
-            <Text style={styles.label}>Duration (minutes)</Text>
+            <Text style={styles.label}>Durasi (menit)</Text>
             <TextInput
               keyboardType="numeric"
               value={duration}
@@ -120,12 +120,12 @@ export default function AddHabitScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.label}>Daily Target</Text>
+            <Text style={styles.label}>Target Harian</Text>
             <TextInput
               keyboardType="numeric"
               value={target}
               onChangeText={setTarget}
-              placeholder="Target amount"
+              placeholder="Masukkan target"
               placeholderTextColor="#9CA3AF"
               style={styles.input}
             />
@@ -133,7 +133,7 @@ export default function AddHabitScreen() {
         )}
 
         <Pressable style={styles.submitButton} onPress={saveHabit}>
-          <Text style={styles.submitButtonText}>Save Habit</Text>
+          <Text style={styles.submitButtonText}>Simpan Habit</Text>
         </Pressable>
       </View>
     </ScrollView>

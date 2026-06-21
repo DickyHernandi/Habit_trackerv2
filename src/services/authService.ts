@@ -18,7 +18,7 @@ export async function registerUser(username: string, password: string) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Registration failed');
+      throw new Error(data.error || 'Pendaftaran gagal');
     }
 
     return data; // { success, token, userId, username }
@@ -38,7 +38,7 @@ export async function loginUser(username: string, password: string) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+      throw new Error(data.error || 'Login gagal');
     }
 
     return data; // { success, token, userId, username }
@@ -60,7 +60,7 @@ export async function validateToken(token: string) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Token validation failed');
+      throw new Error(data.error || 'Validasi token gagal');
     }
 
     return data; // { success, userId, username }

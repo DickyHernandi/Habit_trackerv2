@@ -22,7 +22,7 @@ export default function LeaderboardScreen() {
   return (
     <View style={styles.page}>
       <Text style={styles.title}>Leaderboard</Text>
-      <Text style={styles.subtitle}>Track the top habit builders.</Text>
+      <Text style={styles.subtitle}>Lihat peringkat habit builder terbaik.</Text>
 
       <FlatList
         data={users}
@@ -32,18 +32,18 @@ export default function LeaderboardScreen() {
           <View style={styles.userRow}>
             <View style={styles.userInfo}>
               <Text style={styles.rank}>#{index + 1}</Text>
-              <Text style={styles.username}>{item.username ?? 'Anonymous'}</Text>
+              <Text style={styles.username}>{item.username ?? 'Anonim'}</Text>
               <View style={styles.userMeta}>
                 <Text style={[styles.metaText, styles.metaTextSpacer]}>Lvl {item.level ?? 1}</Text>
                 <Text style={styles.metaText}>🔥 {item.streak ?? 0}</Text>
               </View>
             </View>
-            <Text style={styles.points}>{item.points ?? 0} pts</Text>
+            <Text style={styles.points}>{item.points ?? 0} poin</Text>
           </View>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No users found yet.</Text>
+            <Text style={styles.emptyText}>Belum ada pengguna yang ditemukan.</Text>
           </View>
         )}
       />

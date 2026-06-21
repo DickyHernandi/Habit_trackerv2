@@ -1,4 +1,3 @@
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { reconcileMissedProgressHabitsForUser, requestNotificationPermission } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -6,7 +5,6 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Slot, useRouter } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
 import { AppState, useColorScheme } from 'react-native';
 
@@ -17,13 +15,6 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    async function prepareSplash() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-      } catch {}
-      await SplashScreen.hideAsync();
-    }
-
     async function initNotifications() {
       await requestNotificationPermission();
     }
@@ -77,7 +68,6 @@ export default function RootLayout() {
       }
     });
 
-    prepareSplash();
     initNotifications();
     checkAuth();
 
@@ -103,7 +93,6 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
       <AuthModal visible={!isAuthenticated} />
       {isAuthenticated && <Slot />}
     </ThemeProvider>

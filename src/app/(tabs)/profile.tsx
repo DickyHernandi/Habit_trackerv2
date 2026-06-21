@@ -23,8 +23,8 @@ export default function ProfileScreen() {
   }, [userId]);
 
   function handleLogout() {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('Logout', 'Apakah kamu yakin ingin logout?', [
+      { text: 'Batal', style: 'cancel' },
       {
         text: 'Logout',
         style: 'destructive',
@@ -38,7 +38,7 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <Text style={styles.loadingText}>Memuat profil...</Text>
       </View>
     );
   }
@@ -51,16 +51,16 @@ export default function ProfileScreen() {
         </View>
 
         <Text style={styles.username}>{user.username}</Text>
-        <Text style={styles.role}>{user.role ?? 'Habit Builder'}</Text>
+        <Text style={styles.role}>{user.role ?? 'Pembuat Habit'}</Text>
 
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
             <Text style={styles.statValue}>{user.level}</Text>
-            <Text style={styles.statLabel}>Level</Text>
+            <Text style={styles.statLabel}>Tingkat</Text>
           </View>
           <View style={styles.statBlock}>
             <Text style={styles.statValue}>{user.points}</Text>
-            <Text style={styles.statLabel}>Points</Text>
+            <Text style={styles.statLabel}>Poin</Text>
           </View>
           <View style={styles.statBlock}>
             <Text style={styles.statValue}>{user.streak ?? 0}</Text>
@@ -70,16 +70,16 @@ export default function ProfileScreen() {
 
         <View style={styles.badgeBar}>
           <View style={[styles.badge, styles.badgePrimary]}>
-            <Text style={styles.badgeText}>Daily Focus</Text>
+            <Text style={styles.badgeText}>Fokus Harian</Text>
           </View>
           <View style={[styles.badge, styles.badgeSecondary]}>
-            <Text style={styles.badgeText}>Streak Keeper</Text>
+            <Text style={styles.badgeText}>Penjaga Streak</Text>
           </View>
         </View>
 
         <Link href="/achievements" asChild>
           <Pressable style={styles.achievementsButton}>
-            <Text style={styles.achievementsButtonText}>View achievements</Text>
+            <Text style={styles.achievementsButtonText}>Lihat achievements</Text>
           </Pressable>
         </Link>
 
@@ -94,12 +94,12 @@ export default function ProfileScreen() {
               ))}
             </View>
           ) : (
-            <Text style={styles.noAchievements}>No achievements yet. Keep completing habits!</Text>
+            <Text style={styles.noAchievements}>Belum ada achievement. Terus selesaikan habit!</Text>
           )}
         </View>
 
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Text style={styles.logoutButtonText}>Keluar</Text>
         </Pressable>
       </View>
     </View>

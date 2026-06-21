@@ -58,7 +58,7 @@ export default function HomeScreen() {
 
   const getHabitStatus = (habit: any) => {
     if (habit.type !== 'progress') {
-      return 'Active';
+      return 'Aktif';
     }
 
     const completedAt = Number(habit?.completedAt) || 0;
@@ -69,7 +69,7 @@ export default function HomeScreen() {
       return 'Cooldown';
     }
 
-    return habit.completed || habit.failed ? 'Ready' : 'Active';
+    return habit.completed || habit.failed ? 'Siap' : 'Aktif';
   };
 
   const isHabitCompleted = (habit: any) => habit.type === 'progress' && Boolean(habit.completed);
@@ -78,32 +78,32 @@ export default function HomeScreen() {
     <View style={styles.page}>
       <View style={styles.heroCard}>
         <View style={styles.heroContent}>
-          <Text style={styles.title}>Your Habit Journey</Text>
-          <Text style={styles.subtitle}>Stay consistent, build momentum, and track progress effortlessly.</Text>
+          <Text style={styles.title}>Perjalanan Habitmu</Text>
+          <Text style={styles.subtitle}>Tetap konsisten, bangun momentum, dan lacak progres dengan mudah.</Text>
         </View>
         <Pressable style={styles.actionButton} onPress={() => router.push('/addhabit')}>
-          <Text style={styles.actionButtonText}>New Habit</Text>
+          <Text style={styles.actionButtonText}>Habit Baru</Text>
         </Pressable>
       </View>
 
       <View style={styles.summaryRow}>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total</Text>
+          <Text style={styles.statLabel}>Jumlah</Text>
           <Text style={styles.statValue}>{habits.length}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Completed</Text>
+          <Text style={styles.statLabel}>Selesai</Text>
           <Text style={styles.statValue}>{completedCount}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Progress</Text>
+          <Text style={styles.statLabel}>Progres</Text>
           <Text style={styles.statValue}>{progressPercent}%</Text>
         </View>
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>My Habits</Text>
-        <Text style={styles.sectionSubtitle}>{habits.length} habits tracked</Text>
+        <Text style={styles.sectionTitle}>Habit Saya</Text>
+        <Text style={styles.sectionSubtitle}>{habits.length} habit terpantau</Text>
       </View>
 
       <FlatList
@@ -119,22 +119,22 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <Text style={styles.habitText}>Created: {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : ''}</Text>
-            {item.duration ? <Text style={styles.habitText}>Duration: {item.duration} min</Text> : null}
+            <Text style={styles.habitText}>Dibuat: {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : ''}</Text>
+            {item.duration ? <Text style={styles.habitText}>Durasi: {item.duration} menit</Text> : null}
             {item.target ? <Text style={styles.habitText}>Target: {item.target}</Text> : null}
 
             <View style={styles.cardFooter}>
               <Text style={styles.completionText}>{getHabitStatus(item)}</Text>
               <Pressable onPress={() => deleteDoc(doc(db, 'habits', item.id))} style={styles.deleteButton}>
-                <Text style={styles.deleteButtonText}>Delete</Text>
+                <Text style={styles.deleteButtonText}>Hapus</Text>
               </Pressable>
             </View>
           </Pressable>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No habits yet</Text>
-            <Text style={styles.emptyText}>Create your first habit and start building a streak.</Text>
+            <Text style={styles.emptyTitle}>Belum ada habit</Text>
+            <Text style={styles.emptyText}>Buat habit pertamamu dan mulai bangun streak.</Text>
           </View>
         )}
       />

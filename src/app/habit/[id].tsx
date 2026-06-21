@@ -35,7 +35,7 @@ export default function HabitDetail() {
   if (!habit) {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>Loading habit details...</Text>
+        <Text style={styles.loadingText}>Memuat detail habit...</Text>
       </View>
     );
   }
@@ -43,7 +43,7 @@ export default function HabitDetail() {
   return (
     <View style={styles.page}>
       <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={styles.backText}>← Kembali</Text>
       </Pressable>
 
       {habit.type === 'timed' ? (

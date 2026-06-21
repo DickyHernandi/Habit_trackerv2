@@ -155,7 +155,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       await persistProgressHabitState(latestHabit.id, nextHabit);
       setHabit(nextHabit);
 
-      Alert.alert('Checkpoint missed', 'All checkpoints have been attempted. This habit is now marked as failed.');
+      Alert.alert('Checkpoint terlewat', 'Semua checkpoint telah dicoba. Habit ini sekarang ditandai gagal.');
       return;
     }
 
@@ -183,7 +183,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     await persistProgressHabitState(latestHabit.id, nextHabit);
     setHabit(nextHabit);
 
-    Alert.alert('Checkpoint missed', 'This checkpoint was missed, but your progress habit is still active.');
+    Alert.alert('Checkpoint terlewat', 'Checkpoint ini terlewat, tetapi habit progresmu masih aktif.');
   }
 
   async function confirmCheckpoint() {
@@ -195,7 +195,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     if (Date.now() < checkpointAvailableAt) {
       const remaining = formatCountdown(checkpointAvailableAt - Date.now());
-      Alert.alert('Checkpoint is locked', `Next checkpoint will be available in ${remaining}.`);
+      Alert.alert('Checkpoint terkunci', `Checkpoint berikutnya akan tersedia dalam ${remaining}.`);
       return;
     }
 
@@ -231,7 +231,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
 
-      Alert.alert('Congratulations!', `Progress Habit completed! You gained ${baseCheckpointPoints} points and streak bonus +${streakBonus} point.`);
+      Alert.alert('Selamat!', `Progress Habit selesai! Kamu mendapatkan ${baseCheckpointPoints} poin dan bonus streak +${streakBonus} poin.`);
       return;
     }
 
@@ -290,7 +290,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
-      Alert.alert('Habit Failed', 'All checkpoints have been attempted. This habit is now marked as failed.');
+      Alert.alert('Habit gagal', 'Semua checkpoint telah dicoba. Habit ini sekarang ditandai gagal.');
       return;
     }
 
@@ -318,7 +318,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     await persistProgressHabitState(normalizedHabit.id, nextHabit);
     setHabit(nextHabit);
 
-    Alert.alert('Checkpoint missed', 'This checkpoint was skipped, but your progress habit is still active.');
+    Alert.alert('Checkpoint terlewat', 'Checkpoint ini terlewat, tetapi habit progresmu masih tetap aktif.');
   }
 
   const progressPercent = Math.min(100, ((normalizedHabit.attemptedCheckpoints ?? 0) / getTotalCheckpointCount(normalizedHabit)) * 100);
@@ -360,7 +360,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     await persistProgressHabitState(normalizedHabit.id, resetHabit);
     setHabit(resetHabit);
-    Alert.alert('Success', 'Progress Habit has been reset. New checkpoints will start appearing soon.');
+    Alert.alert('Berhasil', 'Progress Habit telah direset. Checkpoint baru akan muncul segera.');
   }
 
   return (
@@ -374,7 +374,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
       <View style={styles.progressSection}>
         <View style={styles.progressCard}>
-          <Text style={styles.progressLabel}>Progress</Text>
+          <Text style={styles.progressLabel}>Progres</Text>
           <Text style={styles.progressValue}>{normalizedHabit.attemptedCheckpoints ?? 0} / {getTotalCheckpointCount(normalizedHabit)}</Text>
 
           <View style={styles.progressBarBg}>
@@ -383,7 +383,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
           <View style={styles.targetInfo}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Daily Target:</Text>
+              <Text style={styles.infoLabel}>Target Harian:</Text>
               <Text style={styles.infoValue}>{normalizedHabit.target}</Text>
             </View>
             <View style={styles.infoRow}>
@@ -395,28 +395,28 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
         {showMissedNotice && (
           <View style={styles.failedCard}>
-            <Text style={styles.failedTitle}>Checkpoint missed</Text>
-            <Text style={styles.failedSubtitle}>Next checkpoint opens in {formatCountdown(timeUntilCheckpoint)}.</Text>
+            <Text style={styles.failedTitle}>Checkpoint terlewat</Text>
+            <Text style={styles.failedSubtitle}>Checkpoint berikutnya akan terbuka dalam {formatCountdown(timeUntilCheckpoint)}.</Text>
           </View>
         )}
 
         {!normalizedHabit.completed && !showMissedNotice && !isCheckpointAvailable && (
           <View style={styles.lockedCard}>
-            <Text style={styles.lockedTitle}>Checkpoint is locked</Text>
-            <Text style={styles.lockedSubtitle}>Next checkpoint opens in {formatCountdown(timeUntilCheckpoint)}.</Text>
+            <Text style={styles.lockedTitle}>Checkpoint terkunci</Text>
+            <Text style={styles.lockedSubtitle}>Checkpoint berikutnya akan terbuka dalam {formatCountdown(timeUntilCheckpoint)}.</Text>
           </View>
         )}
 
         {!normalizedHabit.completed && !showMissedNotice && isCheckpointAvailable && (
           <View style={styles.questionCard}>
-            <Text style={styles.question}>Have you completed {normalizedHabit.checkpointTarget}?</Text>
+            <Text style={styles.question}>Apakah kamu sudah menyelesaikan {normalizedHabit.checkpointTarget}?</Text>
 
             <View style={styles.buttonRow}>
               <Pressable style={[styles.actionButton, styles.yesButton]} onPress={confirmCheckpoint}>
-                <Text style={styles.buttonText}>Yes</Text>
+                <Text style={styles.buttonText}>Ya</Text>
               </Pressable>
               <Pressable style={[styles.actionButton, styles.noButton]} onPress={rejectCheckpoint}>
-                <Text style={styles.buttonText}>No</Text>
+                <Text style={styles.buttonText}>Tidak</Text>
               </Pressable>
             </View>
           </View>
@@ -424,24 +424,24 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
         {normalizedHabit.completed && (
           <View style={styles.completedCard}>
-            <Text style={styles.completedTitle}>All Done!</Text>
-            <Text style={styles.completedSubtitle}>You've reached all {getTotalCheckpointCount(normalizedHabit)} checkpoints.</Text>
+            <Text style={styles.completedTitle}>Selesai!</Text>
+            <Text style={styles.completedSubtitle}>Kamu telah mencapai semua {getTotalCheckpointCount(normalizedHabit)} checkpoint.</Text>
           </View>
         )}
 
         {(normalizedHabit.completed || normalizedHabit.failed) && isInCooldown && (
           <View style={styles.cooldownCard}>
-            <Text style={styles.cooldownTitle}>On Cooldown</Text>
-            <Text style={styles.cooldownSubtitle}>Next attempt available in {formatCountdown(timeUntilRestart)}</Text>
+            <Text style={styles.cooldownTitle}>Sedang Cooldown</Text>
+            <Text style={styles.cooldownSubtitle}>Kesempatan berikutnya tersedia dalam {formatCountdown(timeUntilRestart)}</Text>
           </View>
         )}
 
         {(normalizedHabit.completed || normalizedHabit.failed) && !isInCooldown && lastEndTime > 0 && (
           <View style={styles.readyCard}>
-            <Text style={styles.readyTitle}>Ready to Continue!</Text>
-            <Text style={styles.readySubtitle}>You can start this habit again.</Text>
+            <Text style={styles.readyTitle}>Siap untuk Dilanjutkan!</Text>
+            <Text style={styles.readySubtitle}>Kamu bisa memulai habit ini lagi.</Text>
             <Pressable style={styles.resetButton} onPress={resetProgressHabit}>
-              <Text style={styles.resetButtonText}>Start New Cycle</Text>
+              <Text style={styles.resetButtonText}>Mulai Siklus Baru</Text>
             </Pressable>
           </View>
         )}

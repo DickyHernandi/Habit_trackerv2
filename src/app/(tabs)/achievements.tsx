@@ -15,106 +15,106 @@ type AchievementItem = {
 const achievementCatalog: AchievementItem[] = [
   {
     id: 'First Habit',
-    title: 'First Habit',
-    description: 'Create your first habit.',
+    title: 'Habit Pertama',
+    description: 'Buat habit pertamamu.',
     difficulty: 'easy',
-    badgeLabel: 'Starter'
+    badgeLabel: 'Pemula'
   },
   {
     id: 'First Completion',
-    title: 'First Completion',
-    description: 'Complete your first habit.',
+    title: 'Selesai Pertama',
+    description: 'Selesaikan habit pertamamu.',
     difficulty: 'easy',
-    badgeLabel: 'Beginner'
+    badgeLabel: 'Pemula'
   },
   {
     id: 'Checkpoint Beginner',
-    title: 'Checkpoint Beginner',
-    description: 'Complete the first progress checkpoint.',
+    title: 'Checkpoint Pertama',
+    description: 'Selesaikan checkpoint progress pertama.',
     difficulty: 'easy',
     badgeLabel: 'Checkpoint'
   },
   {
     id: 'Timer Starter',
-    title: 'Timer Starter',
-    description: 'Finish your first timed habit.',
+    title: 'Pengguna Timer',
+    description: 'Selesaikan timed habit pertamamu.',
     difficulty: 'easy',
     badgeLabel: 'Timer'
   },
   {
     id: 'Consistency Kickoff',
-    title: 'Consistency Kickoff',
-    description: 'Complete a habit 3 days in a row.',
+    title: 'Konsistensi Awal',
+    description: 'Selesaikan habit 3 hari berturut-turut.',
     difficulty: 'easy',
     badgeLabel: 'Streak'
   },
   {
     id: 'Habit Builder',
-    title: 'Habit Builder',
-    description: 'Create 5 habits.',
+    title: 'Pembuat Habit',
+    description: 'Buat 5 habit.',
     difficulty: 'medium',
     badgeLabel: 'Builder'
   },
   {
     id: 'Checkpoint Challenger',
-    title: 'Checkpoint Challenger',
-    description: 'Complete 5 progress checkpoints.',
+    title: 'Tantangan Checkpoint',
+    description: 'Selesaikan 5 checkpoint progress.',
     difficulty: 'medium',
     badgeLabel: 'Challenger'
   },
   {
     id: 'Timer Pro',
-    title: 'Timer Pro',
-    description: 'Complete 3 timed habits.',
+    title: 'Ahli Timer',
+    description: 'Selesaikan 3 timed habit.',
     difficulty: 'medium',
     badgeLabel: 'Pro'
   },
   {
     id: 'Week of Wins',
-    title: 'Week of Wins',
-    description: 'Complete habits for 7 days in a row.',
+    title: 'Minggu Kemenangan',
+    description: 'Selesaikan habit 7 hari berturut-turut.',
     difficulty: 'medium',
     badgeLabel: 'Winner'
   },
   {
     id: 'History Hunter',
-    title: 'History Hunter',
-    description: 'Reach 10 history entries.',
+    title: 'Pemburu Riwayat',
+    description: 'Capai 10 entri riwayat.',
     difficulty: 'medium',
     badgeLabel: 'Historian'
   },
   {
     id: 'Habit Master',
-    title: 'Habit Master',
-    description: 'Complete 20 habits.',
+    title: 'Master Habit',
+    description: 'Selesaikan 20 habit.',
     difficulty: 'hard',
     badgeLabel: 'Master'
   },
   {
     id: 'Checkpoint Champion',
-    title: 'Checkpoint Champion',
-    description: 'Complete 20 progress checkpoints.',
+    title: 'Juara Checkpoint',
+    description: 'Selesaikan 20 checkpoint progress.',
     difficulty: 'hard',
     badgeLabel: 'Champion'
   },
   {
     id: 'Streak Legend',
-    title: 'Streak Legend',
-    description: 'Maintain a 14-day streak.',
+    title: 'Legenda Streak',
+    description: 'Pertahankan streak 14 hari.',
     difficulty: 'hard',
     badgeLabel: 'Legend'
   },
   {
     id: 'Badge Collector',
-    title: 'Badge Collector',
-    description: 'Unlock 10 achievements.',
+    title: 'Pengumpul Lencana',
+    description: 'Buka 10 achievement.',
     difficulty: 'hard',
     badgeLabel: 'Collector'
   },
   {
     id: 'Ultimate Tracker',
-    title: 'Ultimate Tracker',
-    description: 'Earn 100 points from habits.',
+    title: 'Pelacak Utama',
+    description: 'Dapatkan 100 poin dari habit.',
     difficulty: 'hard',
     badgeLabel: 'Ultimate'
   }
@@ -144,7 +144,7 @@ export default function AchievementsScreen() {
     <View style={styles.page}>
       <View style={styles.header}>
         <Text style={styles.title}>Achievements</Text>
-        <Text style={styles.subtitle}>Track badges, difficulty levels, and earned milestones.</Text>
+        <Text style={styles.subtitle}>Lacak lencana, tingkat kesulitan, dan pencapaian.</Text>
       </View>
 
       <FlatList
@@ -168,7 +168,7 @@ export default function AchievementsScreen() {
                 </View>
                 <Text style={styles.description}>{item.description}</Text>
                 <Text style={[styles.statusText, unlocked ? styles.unlockedText : styles.lockedText]}>
-                  {unlocked ? 'Unlocked' : 'Locked'}
+                  {unlocked ? 'Terbuka' : 'Terkunci'}
                 </Text>
               </View>
             </View>
@@ -176,7 +176,7 @@ export default function AchievementsScreen() {
         }}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No achievements unlocked yet.</Text>
+            <Text style={styles.emptyText}>Belum ada achievement yang terbuka.</Text>
           </View>
         )}
       />
