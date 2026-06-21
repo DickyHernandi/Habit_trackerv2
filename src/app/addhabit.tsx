@@ -10,11 +10,14 @@ import {
 } from '../services/notificationService';
 import { getCurrentUserId } from '../services/userService';
 
+const TOTAL_PROGRESS_CHECKPOINTS = 5;
+
 export default function AddHabitScreen() {
   const [name, setName] = useState('');
   const [type, setType] = useState<'timed' | 'progress'>('timed');
   const [duration, setDuration] = useState('');
   const [target, setTarget] = useState('');
+  const [unit, setUnit] = useState('');
   const router = useRouter();
 
   async function saveHabit() {
@@ -33,9 +36,14 @@ export default function AddHabitScreen() {
       return;
     }
 
+    if (type === 'progress' && !unit.trim()) {
+      Alert.alert('Kesalahan', 'Silakan masukkan satuan target');
+      return;
+    }
+
     try {
       const createdAtMs = Date.now();
-      const checkpointTarget = type === 'progress' ? Number(target) / 5 : null;
+      const checkpointTarget = type === 'progress' ? Number(target) / TOTAL_PROGRESS_CHECKPOINTS : null;
       const progressStartAt = type === 'progress' ? createdAtMs + getProgressCheckpointDelayMs() : null;
 
       const habitRef = await addDoc(collection(db, 'habits'), {
@@ -44,10 +52,11 @@ export default function AddHabitScreen() {
         type,
         duration: type === 'timed' ? Number(duration) : null,
         target: type === 'progress' ? Number(target) : null,
+        unit: type === 'progress' ? unit.trim() : null,
         checkpointTarget,
         completedCheckpoint: 0,
         attemptedCheckpoints: 0,
-        totalCheckpoint: type === 'progress' ? 5 : null,
+        totalCheckpoint: type === 'progress' ? TOTAL_PROGRESS_CHECKPOINTS : null,
         completed: false,
         failed: false,
         checkpointStatus: type === 'progress' ? 'pending' : null,
@@ -61,7 +70,7 @@ export default function AddHabitScreen() {
 
       if (type === 'progress' && progressStartAt) {
         try {
-          await scheduleProgressHabitNotifications(habitRef.id, name, checkpointTarget ?? 0, progressStartAt);
+          await scheduleProgressHabitNotifications(habitRef.id, name, checkpointTarget ?? 0, progressStartAt, unit.trim());
         } catch (notificationError) {
           console.warn('Unable to schedule progress habit notification', notificationError);
         }
@@ -126,6 +135,14 @@ export default function AddHabitScreen() {
               value={target}
               onChangeText={setTarget}
               placeholder="Masukkan target"
+              placeholderTextColor="#9CA3AF"
+              style={styles.input}
+            />
+            <Text style={styles.label}>Satuan Target</Text>
+            <TextInput
+              value={unit}
+              onChangeText={setUnit}
+              placeholder="contoh: halaman, km, kali"
               placeholderTextColor="#9CA3AF"
               style={styles.input}
             />

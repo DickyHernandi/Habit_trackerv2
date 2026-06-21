@@ -10,6 +10,8 @@ export interface Habit {
 
   target?: number;
 
+  unit?: string;
+
   completed: boolean;
 
   createdAt: any;

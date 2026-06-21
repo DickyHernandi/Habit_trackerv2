@@ -103,7 +103,7 @@ export default function HomeScreen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Habit Saya</Text>
-        <Text style={styles.sectionSubtitle}>{habits.length} habit terpantau</Text>
+        <Text style={styles.sectionSubtitle}>{habits.length} Habit Terpantau</Text>
       </View>
 
       <FlatList
@@ -121,7 +121,7 @@ export default function HomeScreen() {
 
             <Text style={styles.habitText}>Dibuat: {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : ''}</Text>
             {item.duration ? <Text style={styles.habitText}>Durasi: {item.duration} menit</Text> : null}
-            {item.target ? <Text style={styles.habitText}>Target: {item.target}</Text> : null}
+            {item.target ? <Text style={styles.habitText}>Target: {item.target}{item.unit ? ` ${item.unit}` : ''}</Text> : null}
 
             <View style={styles.cardFooter}>
               <Text style={styles.completionText}>{getHabitStatus(item)}</Text>
@@ -134,7 +134,7 @@ export default function HomeScreen() {
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Belum ada habit</Text>
-            <Text style={styles.emptyText}>Buat habit pertamamu dan mulai bangun streak.</Text>
+            <Text style={styles.emptyText}>Buat habit pertamamu dan mulai bangun konsistensi.</Text>
           </View>
         )}
       />

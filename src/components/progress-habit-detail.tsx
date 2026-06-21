@@ -10,6 +10,7 @@ import { getCurrentUserId } from '../services/userService';
 
 // Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
 const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
+const TOTAL_PROGRESS_CHECKPOINTS = 5;
 
 type Props = {
   habit: any;
@@ -21,8 +22,8 @@ function getNumber(value: unknown, fallback = 0) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
-function getTotalCheckpointCount(habit: any) {
-  return Math.max(1, getNumber(habit?.totalCheckpoint, 5));
+function getTotalCheckpointCount() {
+  return TOTAL_PROGRESS_CHECKPOINTS;
 }
 
 function formatCountdown(ms: number) {
@@ -42,12 +43,20 @@ function formatCountdown(ms: number) {
   return `${seconds}s`;
 }
 
+function formatProgressTargetText(value: number, unit?: string) {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  return unit ? `${value} ${unit}` : `${value}`;
+}
+
 function normalizeProgressHabit(habitData: any) {
   const checkpointAvailableAt = getNumber(habitData?.checkpointAvailableAt, 0);
   const checkpointReminderDeadlineAt = getNumber(habitData?.checkpointReminderDeadlineAt, 0);
   const completedAt = getNumber(habitData?.completedAt, 0);
   const failedAt = getNumber(habitData?.failedAt, 0);
-  const totalCheckpoint = getTotalCheckpointCount(habitData);
+  const totalCheckpoint = getTotalCheckpointCount();
   const checkpointStatus = typeof habitData?.checkpointStatus === 'string' ? habitData.checkpointStatus : 'pending';
 
   return {
@@ -55,6 +64,7 @@ function normalizeProgressHabit(habitData: any) {
     completedCheckpoint: getNumber(habitData?.completedCheckpoint, 0),
     attemptedCheckpoints: getNumber(habitData?.attemptedCheckpoints, 0),
     checkpointTarget: getNumber(habitData?.checkpointTarget, 0),
+    unit: typeof habitData?.unit === 'string' ? habitData.unit : '',
     totalCheckpoint,
     checkpointStatus,
     failed: false,
@@ -64,6 +74,25 @@ function normalizeProgressHabit(habitData: any) {
     completedAt,
     failedAt
   };
+}
+
+type CheckpointStepStatus = 'done' | 'failed' | 'current' | 'locked';
+
+function buildCheckpointSteps(habit: any): CheckpointStepStatus[] {
+  const completedCount = getNumber(habit.completedCheckpoint, 0);
+  const attemptedCount = getNumber(habit.attemptedCheckpoints, 0);
+
+  return Array.from({ length: TOTAL_PROGRESS_CHECKPOINTS }, (_, index) => {
+    if (index < completedCount) {
+      return 'done';
+    }
+
+    if (index < attemptedCount) {
+      return 'failed';
+    }
+
+    return index === attemptedCount ? 'current' : 'locked';
+  });
 }
 
 async function persistProgressHabitState(habitId: string, nextHabit: any) {
@@ -128,12 +157,12 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       return;
     }
 
-    if (latestHabit.attemptedCheckpoints >= getTotalCheckpointCount(latestHabit)) {
+    if (latestHabit.attemptedCheckpoints >= getTotalCheckpointCount()) {
       return;
     }
 
     const newAttempted = latestHabit.attemptedCheckpoints + 1;
-    const totalCheckpoint = getTotalCheckpointCount(latestHabit);
+    const totalCheckpoint = getTotalCheckpointCount();
     const isCompleted = newAttempted >= totalCheckpoint;
 
     await cancelScheduledNotifications(latestHabit.notificationIds);
@@ -165,14 +194,15 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       latestHabit.name,
       latestHabit.checkpointTarget,
       nextCheckpointAt,
-      'missed',
-      true
+      'pending',
+      true,
+      latestHabit.unit
     );
 
     const nextHabit = {
       ...latestHabit,
       attemptedCheckpoints: newAttempted,
-      checkpointStatus: 'missed',
+      checkpointStatus: 'pending',
       completed: false,
       failed: false,
       notificationIds: reminderIds,
@@ -183,7 +213,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     await persistProgressHabitState(latestHabit.id, nextHabit);
     setHabit(nextHabit);
 
-    Alert.alert('Checkpoint terlewat', 'Checkpoint ini terlewat, tetapi habit progresmu masih aktif.');
+    Alert.alert('Gagal', 'Checkpoint ini gagal, tetapi habit progresmu masih aktif.');
   }
 
   async function confirmCheckpoint() {
@@ -201,15 +231,14 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     const newCheckpoint = normalizedHabit.completedCheckpoint + 1;
     const newAttempted = normalizedHabit.attemptedCheckpoints + 1;
-    const totalCheckpoint = getTotalCheckpointCount(normalizedHabit);
+    const totalCheckpoint = getTotalCheckpointCount();
     const isCompleted = newAttempted >= totalCheckpoint;
-    const earnedPoints = 10;
+    const checkpointPoints = newCheckpoint * 10;
 
     if (isCompleted) {
       const nextStreak = await updateUserStreak(getCurrentUserId());
       const streakBonus = getStreakBonus(nextStreak);
-      const baseCheckpointPoints = newCheckpoint * earnedPoints;
-      const finalEarnedPoints = baseCheckpointPoints + streakBonus;
+      const finalEarnedPoints = checkpointPoints + streakBonus;
 
       await cancelScheduledNotifications(normalizedHabit.notificationIds);
       await addUserPoints(getCurrentUserId(), finalEarnedPoints);
@@ -231,7 +260,10 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
 
-      Alert.alert('Selamat!', `Progress Habit selesai! Kamu mendapatkan ${baseCheckpointPoints} poin dan bonus streak +${streakBonus} poin.`);
+      Alert.alert(
+        'Selamat!',
+        `Selamat kamu telah menyelesaikan progress habit dengan ${newCheckpoint} dari ${totalCheckpoint} checkpoint dan mendapatkan poin ${checkpointPoints} + bonus ${streakBonus} poin`
+      );
       return;
     }
 
@@ -244,7 +276,8 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       normalizedHabit.checkpointTarget,
       nextCheckpointAt,
       'pending',
-      true
+      true,
+      normalizedHabit.unit
     );
 
     const nextHabit = {
@@ -269,7 +302,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const newAttempted = normalizedHabit.attemptedCheckpoints + 1;
-    const totalCheckpoint = getTotalCheckpointCount(normalizedHabit);
+    const totalCheckpoint = getTotalCheckpointCount();
     const isCompleted = newAttempted >= totalCheckpoint;
 
     await cancelScheduledNotifications(normalizedHabit.notificationIds);
@@ -290,7 +323,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
-      Alert.alert('Habit gagal', 'Semua checkpoint telah dicoba. Habit ini sekarang ditandai gagal.');
+      Alert.alert('Habit gagal', 'Semua checkpoint telah dilakukan. Habit ini sekarang ditandai gagal.');
       return;
     }
 
@@ -300,14 +333,15 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       normalizedHabit.name,
       normalizedHabit.checkpointTarget,
       nextCheckpointAt,
-      'missed',
-      true
+      'pending',
+      true,
+      normalizedHabit.unit
     );
 
     const nextHabit = {
       ...normalizedHabit,
       attemptedCheckpoints: newAttempted,
-      checkpointStatus: 'missed',
+      checkpointStatus: 'pending',
       completed: false,
       failed: false,
       notificationIds: reminderIds,
@@ -318,15 +352,15 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     await persistProgressHabitState(normalizedHabit.id, nextHabit);
     setHabit(nextHabit);
 
-    Alert.alert('Checkpoint terlewat', 'Checkpoint ini terlewat, tetapi habit progresmu masih tetap aktif.');
+    Alert.alert('Gagal', 'Checkpoint ini gagal, tetapi habit progresmu masih tetap aktif.');
   }
 
-  const progressPercent = Math.min(100, ((normalizedHabit.attemptedCheckpoints ?? 0) / getTotalCheckpointCount(normalizedHabit)) * 100);
+  const totalCheckpoints = getTotalCheckpointCount();
+  const progressPercent = Math.min(100, ((normalizedHabit.attemptedCheckpoints ?? 0) / totalCheckpoints) * 100);
+  const checkpointSteps = buildCheckpointSteps(normalizedHabit);
   const isCheckpointAvailable = now >= getNumber(normalizedHabit.checkpointAvailableAt, 0);
   const timeUntilCheckpoint = Math.max(0, getNumber(normalizedHabit.checkpointAvailableAt, 0) - now);
-  const showMissedNotice = normalizedHabit.checkpointStatus === 'missed' && !isCheckpointAvailable;
 
-  // Cooldown logic
   const completedAt = getNumber(normalizedHabit.completedAt, 0);
   const failedAt = getNumber(normalizedHabit.failedAt, 0);
   const lastEndTime = completedAt > 0 ? completedAt : failedAt;
@@ -341,7 +375,8 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       normalizedHabit.checkpointTarget,
       nextCheckpointAt,
       'pending',
-      true
+      true,
+      normalizedHabit.unit
     );
 
     const resetHabit = {
@@ -375,7 +410,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       <View style={styles.progressSection}>
         <View style={styles.progressCard}>
           <Text style={styles.progressLabel}>Progres</Text>
-          <Text style={styles.progressValue}>{normalizedHabit.attemptedCheckpoints ?? 0} / {getTotalCheckpointCount(normalizedHabit)}</Text>
+          <Text style={styles.progressValue}>{normalizedHabit.attemptedCheckpoints ?? 0} / {totalCheckpoints}</Text>
 
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
@@ -384,32 +419,33 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
           <View style={styles.targetInfo}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Target Harian:</Text>
-              <Text style={styles.infoValue}>{normalizedHabit.target}</Text>
+              <Text style={styles.infoValue}>{formatProgressTargetText(normalizedHabit.target, normalizedHabit.unit)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Checkpoint:</Text>
-              <Text style={styles.infoValue}>{normalizedHabit.attemptedCheckpoints + 1}</Text>
+              <Text style={styles.infoValue}>{normalizedHabit.attemptedCheckpoints + 1} / {totalCheckpoints}</Text>
             </View>
+          </View>
+
+          <View style={styles.checkpointRow}>
+            {checkpointSteps.map((step, index) => (
+              <View key={index} style={[styles.checkpointItem, step === 'done' && styles.checkpointDone, step === 'failed' && styles.checkpointFailed, step === 'current' && styles.checkpointCurrent, step === 'locked' && styles.checkpointLocked]}>
+                <Text style={styles.checkpointLabel}>{index + 1}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {showMissedNotice && (
-          <View style={styles.failedCard}>
-            <Text style={styles.failedTitle}>Checkpoint terlewat</Text>
-            <Text style={styles.failedSubtitle}>Checkpoint berikutnya akan terbuka dalam {formatCountdown(timeUntilCheckpoint)}.</Text>
-          </View>
-        )}
-
-        {!normalizedHabit.completed && !showMissedNotice && !isCheckpointAvailable && (
+        {!normalizedHabit.completed && !isCheckpointAvailable && (
           <View style={styles.lockedCard}>
             <Text style={styles.lockedTitle}>Checkpoint terkunci</Text>
             <Text style={styles.lockedSubtitle}>Checkpoint berikutnya akan terbuka dalam {formatCountdown(timeUntilCheckpoint)}.</Text>
           </View>
         )}
 
-        {!normalizedHabit.completed && !showMissedNotice && isCheckpointAvailable && (
+        {!normalizedHabit.completed && isCheckpointAvailable && (
           <View style={styles.questionCard}>
-            <Text style={styles.question}>Apakah kamu sudah menyelesaikan {normalizedHabit.checkpointTarget}?</Text>
+            <Text style={styles.question}>Apakah kamu sudah menyelesaikan {formatProgressTargetText(normalizedHabit.checkpointTarget, normalizedHabit.unit)}?</Text>
 
             <View style={styles.buttonRow}>
               <Pressable style={[styles.actionButton, styles.yesButton]} onPress={confirmCheckpoint}>
@@ -425,7 +461,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
         {normalizedHabit.completed && (
           <View style={styles.completedCard}>
             <Text style={styles.completedTitle}>Selesai!</Text>
-            <Text style={styles.completedSubtitle}>Kamu telah mencapai semua {getTotalCheckpointCount(normalizedHabit)} checkpoint.</Text>
+            <Text style={styles.completedSubtitle}>Kamu telah mencapai semua {totalCheckpoints} checkpoint.</Text>
           </View>
         )}
 
@@ -533,6 +569,37 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6'
+  },
+  checkpointRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16
+  },
+  checkpointItem: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  checkpointLabel: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  checkpointDone: {
+    backgroundColor: '#A7F3D0'
+  },
+  checkpointFailed: {
+    backgroundColor: '#FECACA'
+  },
+  checkpointCurrent: {
+    backgroundColor: '#BFDBFE'
+  },
+  checkpointLocked: {
+    backgroundColor: '#E5E7EB',
+    opacity: 0.5
   },
   infoRow: {
     flexDirection: 'row',

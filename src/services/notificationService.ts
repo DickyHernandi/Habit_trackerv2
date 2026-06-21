@@ -115,13 +115,22 @@ export async function showTimedHabitFailedNotification(habitName: string) {
   });
 }
 
+function formatProgressTargetNotificationText(checkpointTarget: number, unit?: string) {
+  const targetText = Number.isFinite(checkpointTarget) && checkpointTarget > 0
+    ? `${checkpointTarget}${unit ? ` ${unit}` : ''}`
+    : `${checkpointTarget}`;
+
+  return targetText;
+}
+
 export async function scheduleProgressHabitNotifications(
   habitId: string,
   habitName: string,
   checkpointTarget: number,
   checkpointAvailableAt: number,
   checkpointStatus: 'pending' | 'missed' = 'pending',
-  isNextCheckpoint = false
+  isNextCheckpoint = false,
+  unit?: string
 ) {
   const granted = await requestNotificationPermission();
   const notificationIds: string[] = [];
@@ -150,7 +159,7 @@ export async function scheduleProgressHabitNotifications(
       const reminderNotificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Progress Habit Reminder',
-          body: `Apakah kamu sudah menyelesaikan ${checkpointTarget} untuk ${habitName}? Kamu punya ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} untuk mengonfirmasi.`,
+          body: `Apakah kamu sudah menyelesaikan ${formatProgressTargetNotificationText(checkpointTarget, unit)} untuk ${habitName}? Kamu punya ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} untuk mengonfirmasi.`,
           priority: 'max',
           vibrate: [0, 250, 250, 250],
           data: {
@@ -277,7 +286,7 @@ export async function reconcileMissedProgressHabit(habit: any) {
   await cancelScheduledNotifications(Array.isArray(habit.notificationIds) ? habit.notificationIds : []);
 
   const attemptedCheckpoints = getNumber(habit.attemptedCheckpoints, 0);
-  const totalCheckpoint = Math.max(1, getNumber(habit.totalCheckpoint, 5));
+  const totalCheckpoint = 5;
   const newAttempted = attemptedCheckpoints + 1;
   const isCompleted = newAttempted >= totalCheckpoint;
 
@@ -315,7 +324,8 @@ export async function reconcileMissedProgressHabit(habit: any) {
     getNumber(habit.checkpointTarget, 0),
     nextCheckpointAt,
     'missed',
-    true
+    true,
+    typeof habit.unit === 'string' ? habit.unit : undefined
   );
 
   const nextHabit = {
