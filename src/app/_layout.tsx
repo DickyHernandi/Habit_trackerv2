@@ -1,18 +1,20 @@
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { requestNotificationPermission } from '@/services/notificationService';
+import { reconcileMissedProgressHabitsForUser, requestNotificationPermission } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
-import { Slot } from 'expo-router';
+import { Slot, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { AppState, useColorScheme } from 'react-native';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, restoreSession } = useAuthStore();
   const [authChecked, setAuthChecked] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function prepareSplash() {
@@ -26,9 +28,23 @@ export default function RootLayout() {
       await requestNotificationPermission();
     }
 
+    const BACKEND_URL =
+      (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
+      process.env.BACKEND_URL ||
+      'https://habittrackerv2-production.up.railway.app';
+
     async function checkAuth() {
       try {
         await restoreSession();
+        const userId = useAuthStore.getState().userId;
+        if (userId) {
+          try {
+            await fetch(`${BACKEND_URL}/reconcile-missed-progress?userId=${encodeURIComponent(userId)}`);
+          } catch (backendError) {
+            console.warn('Backend progress reconciliation failed:', backendError);
+          }
+          await reconcileMissedProgressHabitsForUser(userId);
+        }
       } catch (error) {
         console.error('Auth restore failed:', error);
       } finally {
@@ -65,9 +81,19 @@ export default function RootLayout() {
     initNotifications();
     checkAuth();
 
+    const appStateSubscription = AppState.addEventListener('change', async (state) => {
+      if (state === 'active') {
+        const userId = useAuthStore.getState().userId;
+        if (userId) {
+          await reconcileMissedProgressHabitsForUser(userId);
+        }
+      }
+    });
+
     return () => {
       receivedSubscription.remove();
       responseSubscription.remove();
+      appStateSubscription.remove();
     };
   }, [restoreSession]);
 

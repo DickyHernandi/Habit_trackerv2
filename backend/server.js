@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './authRoutes.js';
 import { db } from './firebaseConfig.js';
+import { reconcileMissedProgressHabits } from './progressReconciler.js';
 
 const fileDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(fileDir, '.env') });
@@ -42,6 +43,35 @@ app.get('/debug/firestore', async (req, res) => {
     });
   }
 });
+
+app.get('/reconcile-missed-progress', async (req, res) => {
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
+
+  try {
+    const reconciled = await reconcileMissedProgressHabits({ userId });
+    res.json({ success: true, reconciled: reconciled.length, details: reconciled });
+  } catch (error) {
+    console.error('Failed to reconcile missed progress habits:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+function startMissedProgressScheduler() {
+  const intervalMs = Number(process.env.PROGRESS_RECONCILER_INTERVAL_MS) || 30_000;
+
+  setInterval(async () => {
+    try {
+      const reconciled = await reconcileMissedProgressHabits();
+      if (reconciled.length > 0) {
+        console.log(`Reconciled ${reconciled.length} missed progress habit(s)`);
+      }
+    } catch (error) {
+      console.error('Progress reconciliation failed:', error);
+    }
+  }, intervalMs);
+}
+
+startMissedProgressScheduler();
 
 // Start server
 app.listen(PORT, () => {
