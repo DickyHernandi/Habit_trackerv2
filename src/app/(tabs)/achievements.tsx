@@ -2,7 +2,7 @@ import { db } from '@/services/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
 type AchievementItem = {
   id: string;
@@ -10,6 +10,25 @@ type AchievementItem = {
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   badgeLabel: string;
+  badgeImage: number;
+};
+
+const badgeImages = {
+  firstHabit: require('@/assets/images/achievementBadge/firstHabit.png'),
+  firstCompletion: require('@/assets/images/achievementBadge/firstCompletion.png'),
+  checkpointBeginner: require('@/assets/images/achievementBadge/checkpointBeginner.png'),
+  timerStarter: require('@/assets/images/achievementBadge/timerStarter.png'),
+  consistencyKickoff: require('@/assets/images/achievementBadge/consistencyKickoff.png'),
+  habitBuilder: require('@/assets/images/achievementBadge/habitBuilder.png'),
+  checkpointChallenger: require('@/assets/images/achievementBadge/checkpointChallenger.png'),
+  timerPro: require('@/assets/images/achievementBadge/timerPro.png'),
+  weekOfWins: require('@/assets/images/achievementBadge/weekOfWins.png'),
+  historyHunter: require('@/assets/images/achievementBadge/historyHunter.png'),
+  habitMaster: require('@/assets/images/achievementBadge/habitMaster.png'),
+  checkpointChampion: require('@/assets/images/achievementBadge/checkpointChampion.png'),
+  streakLegend: require('@/assets/images/achievementBadge/streakLegend.png'),
+  badgeCollector: require('@/assets/images/achievementBadge/badgeCollector.png'),
+  ultimateTracker: require('@/assets/images/achievementBadge/ultimateTracker.png')
 };
 
 const achievementCatalog: AchievementItem[] = [
@@ -18,105 +37,120 @@ const achievementCatalog: AchievementItem[] = [
     title: 'Habit Pertama',
     description: 'Buat habit pertamamu.',
     difficulty: 'easy',
-    badgeLabel: 'Pemula'
+    badgeLabel: 'Pemula',
+    badgeImage: badgeImages.firstHabit
   },
   {
     id: 'First Completion',
     title: 'Selesai Pertama',
     description: 'Selesaikan habit pertamamu.',
     difficulty: 'easy',
-    badgeLabel: 'Pemula'
+    badgeLabel: 'Pemula',
+    badgeImage: badgeImages.firstCompletion
   },
   {
     id: 'Checkpoint Beginner',
     title: 'Checkpoint Pertama',
     description: 'Selesaikan checkpoint progress pertama.',
     difficulty: 'easy',
-    badgeLabel: 'Checkpoint'
+    badgeLabel: 'Checkpoint',
+    badgeImage: badgeImages.checkpointBeginner
   },
   {
     id: 'Timer Starter',
     title: 'Pengguna Timer',
     description: 'Selesaikan timed habit pertamamu.',
     difficulty: 'easy',
-    badgeLabel: 'Timer'
+    badgeLabel: 'Timer',
+    badgeImage: badgeImages.timerStarter
   },
   {
     id: 'Consistency Kickoff',
     title: 'Konsistensi Awal',
     description: 'Selesaikan habit 3 hari berturut-turut.',
     difficulty: 'easy',
-    badgeLabel: 'Streak'
+    badgeLabel: 'Streak',
+    badgeImage: badgeImages.consistencyKickoff
   },
   {
     id: 'Habit Builder',
     title: 'Pembuat Habit',
     description: 'Buat 5 habit.',
     difficulty: 'medium',
-    badgeLabel: 'Builder'
+    badgeLabel: 'Builder',
+    badgeImage: badgeImages.habitBuilder
   },
   {
     id: 'Checkpoint Challenger',
     title: 'Tantangan Checkpoint',
     description: 'Selesaikan 5 checkpoint progress.',
     difficulty: 'medium',
-    badgeLabel: 'Challenger'
+    badgeLabel: 'Challenger',
+    badgeImage: badgeImages.checkpointChallenger
   },
   {
     id: 'Timer Pro',
     title: 'Ahli Timer',
     description: 'Selesaikan 3 timed habit.',
     difficulty: 'medium',
-    badgeLabel: 'Pro'
+    badgeLabel: 'Pro',
+    badgeImage: badgeImages.timerPro
   },
   {
     id: 'Week of Wins',
     title: 'Minggu Kemenangan',
     description: 'Selesaikan habit 7 hari berturut-turut.',
     difficulty: 'medium',
-    badgeLabel: 'Winner'
+    badgeLabel: 'Winner',
+    badgeImage: badgeImages.weekOfWins
   },
   {
     id: 'History Hunter',
     title: 'Pemburu Riwayat',
     description: 'Capai 10 entri riwayat.',
     difficulty: 'medium',
-    badgeLabel: 'Historian'
+    badgeLabel: 'Historian',
+    badgeImage: badgeImages.historyHunter
   },
   {
     id: 'Habit Master',
     title: 'Master Habit',
     description: 'Selesaikan 20 habit.',
     difficulty: 'hard',
-    badgeLabel: 'Master'
+    badgeLabel: 'Master',
+    badgeImage: badgeImages.habitMaster
   },
   {
     id: 'Checkpoint Champion',
     title: 'Juara Checkpoint',
     description: 'Selesaikan 20 checkpoint progress.',
     difficulty: 'hard',
-    badgeLabel: 'Champion'
+    badgeLabel: 'Champion',
+    badgeImage: badgeImages.checkpointChampion
   },
   {
     id: 'Streak Legend',
     title: 'Legenda Streak',
     description: 'Pertahankan streak 14 hari.',
     difficulty: 'hard',
-    badgeLabel: 'Legend'
+    badgeLabel: 'Legend',
+    badgeImage: badgeImages.streakLegend
   },
   {
     id: 'Badge Collector',
     title: 'Pengumpul Lencana',
     description: 'Buka 10 achievement.',
     difficulty: 'hard',
-    badgeLabel: 'Collector'
+    badgeLabel: 'Collector',
+    badgeImage: badgeImages.badgeCollector
   },
   {
     id: 'Ultimate Tracker',
     title: 'Pelacak Utama',
     description: 'Dapatkan 100 poin dari habit.',
     difficulty: 'hard',
-    badgeLabel: 'Ultimate'
+    badgeLabel: 'Ultimate',
+    badgeImage: badgeImages.ultimateTracker
   }
 ];
 
@@ -157,7 +191,7 @@ export default function AchievementsScreen() {
           return (
             <View style={[styles.card, unlocked && styles.cardUnlocked]}>
               <View style={[styles.badgePlaceholder, unlocked && styles.badgeUnlocked]}>
-                <Text style={styles.badgePlaceholderText}>{item.badgeLabel}</Text>
+                <Image source={item.badgeImage} style={styles.badgeImage} resizeMode="contain" />
               </View>
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
@@ -233,6 +267,10 @@ const styles = StyleSheet.create({
   },
   badgeUnlocked: {
     backgroundColor: '#D1FAE5'
+  },
+  badgeImage: {
+    width: 48,
+    height: 48
   },
   badgePlaceholderText: {
     textAlign: 'center',
