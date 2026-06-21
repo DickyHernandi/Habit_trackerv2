@@ -33,7 +33,6 @@ export default function HistoryScreen() {
   return (
     <View style={styles.page}>
       <Text style={styles.title}>Riwayat Penyelesaian</Text>
-      <Text style={styles.subtitle}>Lacak hasil habit, hadiah, dan kegagalan.</Text>
 
       <FlatList
         data={history}
@@ -66,7 +65,7 @@ export default function HistoryScreen() {
         }}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Belum ada riwayat. Selesaikan habit untuk melihatnya di sini.</Text>
+            <Text style={styles.emptyText}>Belum ada riwayat. Selesaikan kebiasaan untuk melihatnya di sini</Text>
           </View>
         )}
       />

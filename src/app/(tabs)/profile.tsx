@@ -68,15 +68,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.badgeBar}>
-          <View style={[styles.badge, styles.badgePrimary]}>
-            <Text style={styles.badgeText}>Fokus Harian</Text>
-          </View>
-          <View style={[styles.badge, styles.badgeSecondary]}>
-            <Text style={styles.badgeText}>Penjaga Streak</Text>
-          </View>
-        </View>
-
+        
         <Link href="/achievements" asChild>
           <Pressable style={styles.achievementsButton}>
             <Text style={styles.achievementsButtonText}>Lihat achievements</Text>
@@ -94,7 +86,7 @@ export default function ProfileScreen() {
               ))}
             </View>
           ) : (
-            <Text style={styles.noAchievements}>Belum ada achievement. Terus selesaikan habit!</Text>
+            <Text style={styles.noAchievements}>Belum ada achievement. Terus tingkatkan performa anda</Text>
           )}
         </View>
 

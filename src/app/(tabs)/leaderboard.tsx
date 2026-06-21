@@ -22,7 +22,7 @@ export default function LeaderboardScreen() {
   return (
     <View style={styles.page}>
       <Text style={styles.title}>Leaderboard</Text>
-      <Text style={styles.subtitle}>Lihat peringkat habit builder terbaik.</Text>
+      <Text style={styles.subtitle}>Lihat Peringkatmu</Text>
 
       <FlatList
         data={users}
@@ -31,7 +31,7 @@ export default function LeaderboardScreen() {
         renderItem={({ item, index }) => (
           <View style={styles.userRow}>
             <View style={styles.userInfo}>
-              <Text style={styles.rank}>#{index + 1}</Text>
+              <Text style={styles.rank}>Peringkat {index + 1}</Text>
               <Text style={styles.username}>{item.username ?? 'Anonim'}</Text>
               <View style={styles.userMeta}>
                 <Text style={[styles.metaText, styles.metaTextSpacer]}>Lvl {item.level ?? 1}</Text>
