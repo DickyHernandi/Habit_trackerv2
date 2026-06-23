@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { db } from '../../services/firebase';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -17,12 +17,17 @@ export default function HomeScreen() {
   const [habits, setHabits] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
   const userId = useAuthStore(state => state.userId);
+  const unsubRef = useRef<(() => void) | null>(null);
 
+  // Set up habits listener
   useEffect(() => {
     if (!userId) {
+      console.log('[HomeScreen] No userId available, clearing habits');
       setHabits([]);
       return;
     }
+
+    console.log('[HomeScreen] Setting up habits listener for userId:', userId);
 
     const q = query(
       collection(db, 'habits'),
@@ -30,15 +35,39 @@ export default function HomeScreen() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsub = onSnapshot(q, snapshot => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setHabits(data);
+    const unsub = onSnapshot(
+      q,
+      snapshot => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as any[];
+        console.log('[HomeScreen] Loaded habits:', data.length, data.map(h => ({ name: h.name, type: h.type })));
+        setHabits(data);
+      },
+      error => {
+        console.error('[HomeScreen] Failed to load habits:', error.message, error.code);
+        setHabits([]);
+      }
+    );
+
+    unsubRef.current = unsub;
+    return () => {
+      console.log('[HomeScreen] Unsubscribing from habits listener');
+      unsub();
+    };
+  }, [userId]);
+
+  // Listen for app state changes to refresh habits when coming back from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: string) => {
+      console.log('[HomeScreen] App state changed to:', state);
+      if (state === 'active' && userId && unsubRef.current) {
+        console.log('[HomeScreen] App came to foreground, habits listener should be active');
+      }
     });
 
-    return () => unsub();
+    return () => subscription.remove();
   }, [userId]);
 
   // Update current time for cooldown calculations

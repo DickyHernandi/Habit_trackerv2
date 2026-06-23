@@ -71,7 +71,10 @@ export function TimedHabitDetail({ habit }: Props) {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (state) => {
+      console.log(`[TimedHabit] AppState changed to: ${state}, running: ${running}`);
+      
       if ((state === 'background' || state === 'inactive') && running && habit?.name && !backgroundWarningShown.current) {
+        console.log(`[TimedHabit] App going to background with active timer for: ${habit.name}`);
         backgroundTime.current = Date.now();
         backgroundWarningShown.current = true;
         await cancelScheduledNotification(timerNotificationId.current);
@@ -80,9 +83,11 @@ export function TimedHabitDetail({ habit }: Props) {
 
       if (state === 'active' && backgroundTime.current) {
         const diff = (Date.now() - backgroundTime.current) / 1000;
+        console.log(`[TimedHabit] App came back to foreground. Time away: ${diff}s, running: ${running}`);
         backgroundTime.current = null;
 
         if (diff > 30 && running) {
+          console.log(`[TimedHabit] Timer failed - app was in background for more than 30 seconds`);
           await failTimedHabit();
           return;
         }

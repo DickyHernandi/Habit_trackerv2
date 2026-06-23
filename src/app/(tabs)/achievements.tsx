@@ -191,7 +191,7 @@ export default function AchievementsScreen() {
           return (
             <View style={[styles.card, unlocked && styles.cardUnlocked]}>
               <View style={[styles.badgePlaceholder, unlocked && styles.badgeUnlocked]}>
-                <Image source={item.badgeImage} style={styles.badgeImage} resizeMode="contain" />
+                <Image source={item.badgeImage} style={styles.badgeImage} resizeMode="cover" />
               </View>
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
@@ -258,19 +258,21 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   badgePlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#E5E7EB',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    overflow: 'hidden'
   },
   badgeUnlocked: {
     backgroundColor: '#D1FAE5'
   },
   badgeImage: {
-    width: 48,
-    height: 48
+    width: '100%',
+    height: '100%',
+    borderRadius: 42
   },
   badgePlaceholderText: {
     textAlign: 'center',
@@ -298,13 +300,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10
   },
   difficulty_easy: {
-    backgroundColor: '#D1FAE5'
+    backgroundColor: '#2C3539'
   },
   difficulty_medium: {
-    backgroundColor: '#FEF3C7'
+    backgroundColor: '#2C3539'
   },
   difficulty_hard: {
-    backgroundColor: '#FEE2E2'
+    backgroundColor: '#2C3539'
   },
   difficultyText: {
     fontSize: 11,

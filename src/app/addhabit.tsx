@@ -3,11 +3,6 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { db } from '../services/firebase';
-import {
-    getProgressCheckpointDelayMs,
-    getProgressReminderWindowMs,
-    scheduleProgressHabitNotifications
-} from '../services/notificationService';
 import { getCurrentUserId } from '../services/userService';
 
 const TOTAL_PROGRESS_CHECKPOINTS = 5;
@@ -44,7 +39,6 @@ export default function AddHabitScreen() {
     try {
       const createdAtMs = Date.now();
       const checkpointTarget = type === 'progress' ? Number(target) / TOTAL_PROGRESS_CHECKPOINTS : null;
-      const progressStartAt = type === 'progress' ? createdAtMs + getProgressCheckpointDelayMs() : null;
 
       const habitRef = await addDoc(collection(db, 'habits'), {
         userId: getCurrentUserId(),
@@ -62,19 +56,11 @@ export default function AddHabitScreen() {
         checkpointStatus: type === 'progress' ? 'pending' : null,
         createdAt: new Date(createdAtMs),
         notificationIds: [],
-        checkpointAvailableAt: progressStartAt,
-        checkpointReminderDeadlineAt: type === 'progress' && progressStartAt !== null ? progressStartAt + getProgressReminderWindowMs() : null,
+        checkpointAvailableAt: null,
+        checkpointReminderDeadlineAt: null,
         completedAt: null,
         failedAt: null
       });
-
-      if (type === 'progress' && progressStartAt) {
-        try {
-          await scheduleProgressHabitNotifications(habitRef.id, name, checkpointTarget ?? 0, progressStartAt, unit.trim());
-        } catch (notificationError) {
-          console.warn('Unable to schedule progress habit notification', notificationError);
-        }
-      }
 
       Alert.alert('Berhasil', 'Habit berhasil dibuat');
       router.back();
