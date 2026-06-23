@@ -64,7 +64,7 @@ export function TimedHabitDetail({ habit }: Props) {
     const basePoints = habit.duration * 2;
     const earnedPoints = basePoints + streakBonus;
 
-    await addUserPoints(getCurrentUserId(), earnedPoints);
+    await addUserPoints(getCurrentUserId(), earnedPoints, 'timed');
     await saveHistory(getCurrentUserId(), habit.name, habit.type, earnedPoints, 'completed');
     Alert.alert('Selamat!', `Kamu telah menyelesaikan "${habit.name}". Kamu mendapatkan ${basePoints} poin dan bonus streak +${streakBonus} poin.`);
   }

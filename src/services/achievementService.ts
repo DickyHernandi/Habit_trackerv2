@@ -2,21 +2,31 @@ import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export async function unlockAchievement(userId: string, achievement: string) {
-  const userRef = doc(db, 'users', userId);
-  const snapshot = await getDoc(userRef);
+  try {
+    const userRef = doc(db, 'users', userId);
+    const snapshot = await getDoc(userRef);
 
-  if (!snapshot.exists()) {
-    return;
+    if (!snapshot.exists()) {
+      console.log(`[AchievementService] User ${userId} does not exist`);
+      return;
+    }
+
+    const userData = snapshot.data();
+    const currentAchievements = userData.achievements || [];
+
+    if (currentAchievements.includes(achievement)) {
+      console.log(`[AchievementService] Achievement "${achievement}" already unlocked for user ${userId}`);
+      return;
+    }
+
+    console.log(`[AchievementService] Unlocking achievement "${achievement}" for user ${userId}`);
+    
+    await updateDoc(userRef, {
+      achievements: arrayUnion(achievement)
+    });
+
+    console.log(`[AchievementService] Successfully unlocked "${achievement}". Total achievements: ${currentAchievements.length + 1}`);
+  } catch (error: any) {
+    console.error(`[AchievementService] Failed to unlock achievement "${achievement}":`, error.message);
   }
-
-  const userData = snapshot.data();
-  const currentAchievements = userData.achievements || [];
-
-  if (currentAchievements.includes(achievement)) {
-    return;
-  }
-
-  await updateDoc(userRef, {
-    achievements: arrayUnion(achievement)
-  });
 }

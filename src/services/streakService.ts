@@ -31,8 +31,16 @@ export async function updateUserStreak(userId: string) {
       lastCompletedDate: today
     });
 
-    if (nextStreak >= 7) {
-      await unlockAchievement(userId, '7 Day Streak');
+    if (nextStreak === 3 && !userData.achievements?.includes('Consistency Kickoff')) {
+      await unlockAchievement(userId, 'Consistency Kickoff');
+    }
+
+    if (nextStreak === 7 && !userData.achievements?.includes('Week of Wins')) {
+      await unlockAchievement(userId, 'Week of Wins');
+    }
+
+    if (nextStreak === 14 && !userData.achievements?.includes('Streak Legend')) {
+      await unlockAchievement(userId, 'Streak Legend');
     }
     return nextStreak;
   }

@@ -14,7 +14,8 @@ import {
 
 export async function addUserPoints(
   userId: string,
-  earnedPoints: number
+  earnedPoints: number,
+  habitType?: string
 ) {
   const userRef = doc(db, 'users', userId);
   const snapshot = await getDoc(userRef);
@@ -26,17 +27,103 @@ export async function addUserPoints(
   const userAchievements = userData.achievements || [];
   const newPoints = currentPoints + earnedPoints;
   const newLevel = calculateLevel(newPoints);
+  const completedHabits = userData.completedHabits || 0;
+  const completedCheckpoints = userData.completedCheckpoints || 0;
+  const completedTimedHabits = userData.completedTimedHabits || 0;
 
-  await updateDoc(userRef, {
+  // Track completion counts
+  const updateData: any = {
     points: increment(earnedPoints),
     level: newLevel
-  });
+  };
 
+  if (habitType === 'progress') {
+    updateData.completedCheckpoints = increment(1);
+  } else if (habitType === 'timed') {
+    updateData.completedTimedHabits = increment(1);
+  }
+
+  updateData.completedHabits = increment(1);
+
+  await updateDoc(userRef, updateData);
+
+  // Unlock achievements based on points
   if (newPoints >= 1000 && !userAchievements.includes('Ultimate Tracker')) {
     await unlockAchievement(userId, 'Ultimate Tracker');
   }
 
+  // Unlock First Habit (first time with points)
   if (currentPoints === 0 && earnedPoints > 0 && !userAchievements.includes('First Habit')) {
     await unlockAchievement(userId, 'First Habit');
+  }
+
+  // Unlock First Completion (first habit completed)
+  if (completedHabits === 0 && earnedPoints > 0 && !userAchievements.includes('First Completion')) {
+    await unlockAchievement(userId, 'First Completion');
+  }
+
+  // Unlock Checkpoint Beginner (first checkpoint)
+  if (habitType === 'progress' && completedCheckpoints === 0 && !userAchievements.includes('Checkpoint Beginner')) {
+    await unlockAchievement(userId, 'Checkpoint Beginner');
+  }
+
+  // Unlock Checkpoint Challenger (5 checkpoints)
+  if (habitType === 'progress' && completedCheckpoints + 1 === 5 && !userAchievements.includes('Checkpoint Challenger')) {
+    await unlockAchievement(userId, 'Checkpoint Challenger');
+  }
+
+  // Unlock Checkpoint Champion (20 checkpoints)
+  if (habitType === 'progress' && completedCheckpoints + 1 === 20 && !userAchievements.includes('Checkpoint Champion')) {
+    await unlockAchievement(userId, 'Checkpoint Champion');
+  }
+
+  // Unlock Timer Starter (first timed habit)
+  if (habitType === 'timed' && completedTimedHabits === 0 && !userAchievements.includes('Timer Starter')) {
+    await unlockAchievement(userId, 'Timer Starter');
+  }
+
+  // Unlock Timer Pro (3 timed habits)
+  if (habitType === 'timed' && completedTimedHabits + 1 === 3 && !userAchievements.includes('Timer Pro')) {
+    await unlockAchievement(userId, 'Timer Pro');
+  }
+
+  // Check for Badge Collector (10 achievements unlocked)
+  if (userAchievements.length === 10 && !userAchievements.includes('Badge Collector')) {
+    await unlockAchievement(userId, 'Badge Collector');
+  }
+}
+
+export async function checkHabitCountAchievements(userId: string, habitCount: number) {
+  const userRef = doc(db, 'users', userId);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) return;
+
+  const userData = snapshot.data();
+  const userAchievements = userData.achievements || [];
+
+  // Unlock Habit Builder (5 habits)
+  if (habitCount === 5 && !userAchievements.includes('Habit Builder')) {
+    await unlockAchievement(userId, 'Habit Builder');
+  }
+
+  // Unlock Habit Master (20 habits)
+  if (habitCount === 20 && !userAchievements.includes('Habit Master')) {
+    await unlockAchievement(userId, 'Habit Master');
+  }
+}
+
+export async function checkHistoryCountAchievements(userId: string, historyCount: number) {
+  const userRef = doc(db, 'users', userId);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) return;
+
+  const userData = snapshot.data();
+  const userAchievements = userData.achievements || [];
+
+  // Unlock History Hunter (10 history entries)
+  if (historyCount === 10 && !userAchievements.includes('History Hunter')) {
+    await unlockAchievement(userId, 'History Hunter');
   }
 }

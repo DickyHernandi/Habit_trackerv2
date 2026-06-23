@@ -198,7 +198,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
         const streakBonus = getStreakBonus(nextStreak);
         const finalEarnedPoints = checkpointPoints + streakBonus;
 
-        await addUserPoints(getCurrentUserId(), finalEarnedPoints);
+        await addUserPoints(getCurrentUserId(), finalEarnedPoints, 'progress');
         await saveHistory(getCurrentUserId(), latestHabit.name, latestHabit.type, finalEarnedPoints, 'completed');
 
         Alert.alert('Selesai', `Progress habit selesai dengan ${latestHabit.completedCheckpoint} checkpoint dan mendapatkan poin ${checkpointPoints} + bonus ${streakBonus} poin`);
@@ -277,7 +277,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       await persistProgressHabitState(normalizedHabit.id, nextHabit);
       setHabit(nextHabit);
 
-      await addUserPoints(getCurrentUserId(), finalEarnedPoints);
+      await addUserPoints(getCurrentUserId(), finalEarnedPoints, 'progress');
       await saveHistory(getCurrentUserId(), normalizedHabit.name, normalizedHabit.type, finalEarnedPoints, 'completed');
 
       Alert.alert(
@@ -349,7 +349,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
         const streakBonus = getStreakBonus(nextStreak);
         const finalEarnedPoints = checkpointPoints + streakBonus;
 
-        await addUserPoints(getCurrentUserId(), finalEarnedPoints);
+        await addUserPoints(getCurrentUserId(), finalEarnedPoints, 'progress');
         await saveHistory(getCurrentUserId(), normalizedHabit.name, normalizedHabit.type, finalEarnedPoints, 'completed');
 
         Alert.alert('Selesai', `Progress habit selesai dengan ${normalizedHabit.completedCheckpoint} checkpoint dan mendapatkan poin ${checkpointPoints} + bonus ${streakBonus} poin`);
