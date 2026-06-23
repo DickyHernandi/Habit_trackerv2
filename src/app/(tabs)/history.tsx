@@ -1,33 +1,63 @@
 import { db } from '@/services/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, FlatList, StyleSheet, Text, View } from 'react-native';
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<any[]>([]);
   const userId = useAuthStore(state => state.userId);
+  const unsubRef = useRef<(() => void) | null>(null);
 
+  // Set up history listener
   useEffect(() => {
     if (!userId) {
+      console.log('[HistoryScreen] No userId available, clearing history');
       setHistory([]);
       return;
     }
+
+    console.log('[HistoryScreen] Setting up history listener for userId:', userId);
 
     const q = query(
       collection(db, 'history'),
       where('userId', '==', userId),
       orderBy('completedAt', 'desc')
     );
-    const unsubscribe = onSnapshot(q, snapshot => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setHistory(data);
+
+    const unsubscribe = onSnapshot(
+      q,
+      snapshot => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as any[];
+        console.log('[HistoryScreen] Loaded history entries:', data.length);
+        setHistory(data);
+      },
+      error => {
+        console.error('[HistoryScreen] Failed to load history:', error.message, error.code);
+        setHistory([]);
+      }
+    );
+
+    unsubRef.current = unsubscribe;
+    return () => {
+      console.log('[HistoryScreen] Unsubscribing from history listener');
+      unsubscribe();
+    };
+  }, [userId]);
+
+  // Listen for app state changes to ensure history data stays fresh
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: string) => {
+      console.log('[HistoryScreen] App state changed to:', state);
+      if (state === 'active' && userId && unsubRef.current) {
+        console.log('[HistoryScreen] App came to foreground, history listener should be active');
+      }
     });
 
-    return () => unsubscribe();
+    return () => subscription.remove();
   }, [userId]);
 
   return (

@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#2C3539',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden'
@@ -300,13 +300,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10
   },
   difficulty_easy: {
-    backgroundColor: '#2C3539'
+    backgroundColor: '#D1FAE5'
   },
   difficulty_medium: {
-    backgroundColor: '#2C3539'
+    backgroundColor: '#FEF3C7'
   },
   difficulty_hard: {
-    backgroundColor: '#2C3539'
+    backgroundColor: '#FEE2E2'
   },
   difficultyText: {
     fontSize: 11,
