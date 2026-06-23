@@ -32,8 +32,8 @@ export async function addUserPoints(
     level: newLevel
   });
 
-  if (newPoints >= 100 && !userAchievements.includes('100 Points')) {
-    await unlockAchievement(userId, '100 Points');
+  if (newPoints >= 1000 && !userAchievements.includes('Ultimate Tracker')) {
+    await unlockAchievement(userId, 'Ultimate Tracker');
   }
 
   if (currentPoints === 0 && earnedPoints > 0 && !userAchievements.includes('First Habit')) {

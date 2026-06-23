@@ -1,8 +1,8 @@
 import { db } from '@/services/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
 type AchievementItem = {
   id: string;
@@ -147,7 +147,7 @@ const achievementCatalog: AchievementItem[] = [
   {
     id: 'Ultimate Tracker',
     title: 'Ultimate Tracker',
-    description: 'Dapatkan 100 poin dari habit.',
+    description: 'Dapatkan 1000 poin dari habit.',
     difficulty: 'hard',
     badgeLabel: 'Ultimate',
     badgeImage: badgeImages.ultimateTracker
@@ -157,19 +157,49 @@ const achievementCatalog: AchievementItem[] = [
 export default function AchievementsScreen() {
   const [earnedAchievements, setEarnedAchievements] = useState<string[]>([]);
   const userId = useAuthStore(state => state.userId);
+  const unsubRef = useRef<(() => void) | null>(null);
 
+  // Set up achievements listener
   useEffect(() => {
     if (!userId) {
+      console.log('[AchievementsScreen] No userId available, clearing achievements');
       setEarnedAchievements([]);
       return;
     }
 
-    const unsubscribe = onSnapshot(doc(db, 'users', userId), snapshot => {
-      const data = snapshot.data();
-      setEarnedAchievements(Array.isArray(data?.achievements) ? data.achievements : []);
+    console.log('[AchievementsScreen] Setting up achievements listener for userId:', userId);
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', userId),
+      snapshot => {
+        const data = snapshot.data();
+        const achievements = Array.isArray(data?.achievements) ? data.achievements : [];
+        console.log('[AchievementsScreen] Loaded achievements:', achievements.length, achievements);
+        setEarnedAchievements(achievements);
+      },
+      error => {
+        console.error('[AchievementsScreen] Failed to load achievements:', error.message, error.code);
+        setEarnedAchievements([]);
+      }
+    );
+
+    unsubRef.current = unsubscribe;
+    return () => {
+      console.log('[AchievementsScreen] Unsubscribing from achievements listener');
+      unsubscribe();
+    };
+  }, [userId]);
+
+  // Listen for app state changes to ensure achievements data stays fresh
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: string) => {
+      console.log('[AchievementsScreen] App state changed to:', state);
+      if (state === 'active' && userId && unsubRef.current) {
+        console.log('[AchievementsScreen] App came to foreground, achievements listener should be active');
+      }
     });
 
-    return () => unsubscribe();
+    return () => subscription.remove();
   }, [userId]);
 
   const achievements = useMemo(() => achievementCatalog, []);
