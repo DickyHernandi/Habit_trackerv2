@@ -2,7 +2,9 @@ import * as Notifications from 'expo-notifications';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { db } from './firebase';
+import { addUserPoints } from './gamificationService';
 import { saveHistory } from './historyService';
+import { getStreakBonus, updateUserStreak } from './streakService';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -296,6 +298,25 @@ function hasPassedCheckpointInCurrentCycle(habit: any) {
   return checkpointResults.some((result: string | undefined) => result === 'passed');
 }
 
+async function finalizeProgressHabitCompletion(habit: any, hasSuccess: boolean) {
+  if (!habit?.userId) {
+    return;
+  }
+
+  if (!hasSuccess) {
+    await saveHistory(habit.userId, habit.name, habit.type, 0, 'failed');
+    return;
+  }
+
+  const checkpointPoints = getNumber(habit?.completedCheckpoint, 0) * 10;
+  const nextStreak = await updateUserStreak(habit.userId);
+  const streakBonus = getStreakBonus(nextStreak);
+  const finalEarnedPoints = checkpointPoints + streakBonus;
+
+  await addUserPoints(habit.userId, finalEarnedPoints, 'progress');
+  await saveHistory(habit.userId, habit.name, habit.type, finalEarnedPoints, 'completed');
+}
+
 export async function reconcileMissedProgressHabit(habit: any) {
   if (!habit || habit.type !== 'progress' || habit.completed || habit.failed) {
     return null;
@@ -359,7 +380,7 @@ export async function reconcileMissedProgressHabit(habit: any) {
       checkpointResults: nextHabit.checkpointResults
     });
 
-    await saveHistory(habit.userId, habit.name, habit.type, 0, 'failed');
+    await finalizeProgressHabitCompletion(habit, hasSuccess);
     return nextHabit;
   }
 

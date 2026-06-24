@@ -1,5 +1,39 @@
 import admin, { db } from './firebaseConfig.js';
 
+async function finalizeProgressHabitCompletion(habit, hasSuccess) {
+  if (!habit?.userId) {
+    return;
+  }
+
+  const historyPayload = {
+    userId: habit.userId,
+    habitName: habit.name,
+    habitType: habit.type,
+    points: 0,
+    status: 'failed',
+    completedAt: admin.firestore.Timestamp.now()
+  };
+
+  if (!hasSuccess) {
+    await db.collection('history').add(historyPayload);
+    return;
+  }
+
+  const earnedPoints = getNumber(habit?.completedCheckpoint, 0) * 10;
+
+  await db.collection('users').doc(habit.userId).update({
+    points: admin.firestore.FieldValue.increment(earnedPoints),
+    completedHabits: admin.firestore.FieldValue.increment(1),
+    completedCheckpoints: admin.firestore.FieldValue.increment(1)
+  });
+
+  await db.collection('history').add({
+    ...historyPayload,
+    points: earnedPoints,
+    status: 'completed'
+  });
+}
+
 const USE_PROGRESS_HABIT_TEST_TIMING = true;
 const PROGRESS_NEXT_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
   ? 4 * 60 * 1000
@@ -106,6 +140,7 @@ export async function reconcileMissedProgressHabits({ userId } = {}) {
     }
 
     await db.collection('habits').doc(habit.id).update(updatePayload);
+    await finalizeProgressHabitCompletion(habit, hasSuccess);
 
     updates.push({
       id: habit.id,
