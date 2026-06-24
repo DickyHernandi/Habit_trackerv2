@@ -1,6 +1,6 @@
 import { db } from '@/services/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -21,17 +21,20 @@ export default function HistoryScreen() {
 
     const q = query(
       collection(db, 'history'),
-      where('userId', '==', userId),
-      orderBy('completedAt', 'desc')
+      where('userId', '==', userId)
     );
 
     const unsubscribe = onSnapshot(
       q,
       snapshot => {
-        const data = snapshot.docs.map(doc => ({
+        const data = (snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as any[];
+        })) as any[]).sort((a, b) => {
+          const aTime = a.completedAt ? (typeof a.completedAt.toDate === 'function' ? a.completedAt.toDate().getTime() : new Date(a.completedAt).getTime()) : 0;
+          const bTime = b.completedAt ? (typeof b.completedAt.toDate === 'function' ? b.completedAt.toDate().getTime() : new Date(b.completedAt).getTime()) : 0;
+          return bTime - aTime;
+        });
         console.log('[HistoryScreen] Loaded history entries:', data.length);
         setHistory(data);
       },

@@ -1,5 +1,5 @@
 import { AuthModal } from '@/components/auth/AuthModal';
-import { reconcileMissedProgressHabitsForUser, requestNotificationPermission } from '@/services/notificationService';
+import { reconcileMissedProgressHabitsForUser, requestNotificationPermission, reschedulePendingProgressHabitsForUser } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import Constants from 'expo-constants';
@@ -34,6 +34,7 @@ export default function RootLayout() {
           } catch (backendError) {
             console.warn('Backend progress reconciliation failed:', backendError);
           }
+          await reschedulePendingProgressHabitsForUser(userId);
           await reconcileMissedProgressHabitsForUser(userId);
         }
       } catch (error) {
@@ -53,17 +54,28 @@ export default function RootLayout() {
       })
     });
 
-    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    const receivedSubscription = Notifications.addNotificationReceivedListener(async (notification) => {
       console.log('Notification received while app is running', {
         title: notification.request.content.title,
         body: notification.request.content.body,
         data: notification.request.content.data
       });
+
+      const habitId = notification.request.content.data?.habitId;
+      const userId = useAuthStore.getState().userId;
+      if (habitId && userId) {
+        await reschedulePendingProgressHabitsForUser(userId);
+        await reconcileMissedProgressHabitsForUser(userId);
+      }
     });
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const habitId = response.notification.request.content.data?.habitId;
       if (habitId) {
+        const userId = useAuthStore.getState().userId;
+        if (userId) {
+          await reconcileMissedProgressHabitsForUser(userId);
+        }
         router.push(`/habit/${habitId}`);
       }
     });

@@ -3,6 +3,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { db } from '../services/firebase';
+import { checkHabitCountAchievements } from '../services/gamificationService';
 import { getCurrentUserId } from '../services/userService';
 
 const TOTAL_PROGRESS_CHECKPOINTS = 5;
@@ -38,10 +39,11 @@ export default function AddHabitScreen() {
 
     try {
       const createdAtMs = Date.now();
+      const userId = getCurrentUserId();
       const checkpointTarget = type === 'progress' ? Number(target) / TOTAL_PROGRESS_CHECKPOINTS : null;
 
       const habitRef = await addDoc(collection(db, 'habits'), {
-        userId: getCurrentUserId(),
+        userId,
         name,
         type,
         duration: type === 'timed' ? Number(duration) : null,
@@ -61,6 +63,8 @@ export default function AddHabitScreen() {
         completedAt: null,
         failedAt: null
       });
+
+      await checkHabitCountAchievements(userId, 1, type);
 
       Alert.alert('Berhasil', 'Habit berhasil dibuat');
       router.back();

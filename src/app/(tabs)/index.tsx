@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { db } from '../../services/firebase';
@@ -12,6 +12,14 @@ const TYPE_COLOR: Record<string, string> = {
 
 // Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
 const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
+
+function getCreatedAtValue(createdAt: any) {
+  if (!createdAt) return 0;
+  if (typeof createdAt?.toDate === 'function') return createdAt.toDate().getTime();
+  if (typeof createdAt?.toMillis === 'function') return createdAt.toMillis();
+  if (typeof createdAt?.seconds === 'number') return createdAt.seconds * 1000;
+  return 0;
+}
 
 export default function HomeScreen() {
   const [habits, setHabits] = useState<any[]>([]);
@@ -31,17 +39,19 @@ export default function HomeScreen() {
 
     const q = query(
       collection(db, 'habits'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
 
     const unsub = onSnapshot(
       q,
       snapshot => {
-        const data = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as any[];
+        const data = (snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as any[])
+          .sort((a, b) => getCreatedAtValue(b.createdAt) - getCreatedAtValue(a.createdAt));
+
         console.log('[HomeScreen] Loaded habits:', data.length, data.map(h => ({ name: h.name, type: h.type })));
         setHabits(data);
       },

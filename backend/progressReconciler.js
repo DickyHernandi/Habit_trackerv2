@@ -13,6 +13,45 @@ function getNumber(value, fallback = 0) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+function buildCheckpointResults(habit) {
+  const completedCheckpoint = getNumber(habit?.completedCheckpoint, 0);
+  const attemptedCheckpoints = getNumber(habit?.attemptedCheckpoints, 0);
+  const totalCheckpoint = Math.max(1, getNumber(habit?.totalCheckpoint, 5));
+
+  if (Array.isArray(habit?.checkpointResults) && habit.checkpointResults.length > 0) {
+    return habit.checkpointResults
+      .slice(0, totalCheckpoint)
+      .concat(Array.from({ length: Math.max(0, totalCheckpoint - habit.checkpointResults.length) }, () => 'pending'));
+  }
+
+  return Array.from({ length: totalCheckpoint }, (_, index) => {
+    if (index < completedCheckpoint) {
+      return 'passed';
+    }
+
+    if (index < attemptedCheckpoints) {
+      return 'failed';
+    }
+
+    return 'pending';
+  });
+}
+
+function markNextCheckpointFailed(habit) {
+  const checkpointResults = buildCheckpointResults(habit);
+  const nextIndex = checkpointResults.findIndex((result) => result === 'pending');
+
+  if (nextIndex !== -1) {
+    checkpointResults[nextIndex] = 'failed';
+  }
+
+  return checkpointResults;
+}
+
+function hasPassedCheckpointInCurrentCycle(habit) {
+  return buildCheckpointResults(habit).some((result) => result === 'passed');
+}
+
 export async function reconcileMissedProgressHabits({ userId } = {}) {
   const now = Date.now();
   let query = db.collection('habits')
@@ -37,20 +76,24 @@ export async function reconcileMissedProgressHabits({ userId } = {}) {
     const attemptedCheckpoints = getNumber(habit.attemptedCheckpoints, 0);
     const totalCheckpoint = Math.max(1, getNumber(habit.totalCheckpoint, 5));
     const nextAttemptedCheckpoints = attemptedCheckpoints + 1;
+    const checkpointResults = markNextCheckpointFailed(habit);
+    const hasSuccess = hasPassedCheckpointInCurrentCycle({ ...habit, checkpointResults });
 
     const updatePayload = {
-      attemptedCheckpoints: nextAttemptedCheckpoints
+      attemptedCheckpoints: nextAttemptedCheckpoints,
+      checkpointResults
     };
 
     if (nextAttemptedCheckpoints >= totalCheckpoint) {
       Object.assign(updatePayload, {
-        completed: true,
-        failed: true,
-        checkpointStatus: 'pending',
+        completed: hasSuccess,
+        failed: !hasSuccess,
+        checkpointStatus: hasSuccess ? 'pending' : 'failed',
         notificationIds: [],
         checkpointAvailableAt: null,
         checkpointReminderDeadlineAt: null,
-        failedAt: admin.firestore.Timestamp.now()
+        completedAt: hasSuccess ? admin.firestore.Timestamp.now() : null,
+        failedAt: !hasSuccess ? admin.firestore.Timestamp.now() : null
       });
     } else {
       const nextCheckpointAt = now + PROGRESS_NEXT_CHECKPOINT_DELAY_MS;

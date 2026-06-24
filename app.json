@@ -20,6 +20,7 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.shell.HabitTracker",
       "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
         "android.permission.SCHEDULE_EXACT_ALARM"
       ]
     },

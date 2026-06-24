@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { db } from './firebase';
+import { saveHistory } from './historyService';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -15,12 +16,12 @@ Notifications.setNotificationHandler({
 
 const USE_PROGRESS_HABIT_TEST_TIMING = true;
 const PROGRESS_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
-  ? 2 * 60 * 1000
-  : 2 * 60 * 60 * 1000;
+  ? 3 * 60 * 1000
+  : 3 * 60 * 60 * 1000;
 const PROGRESS_NEXT_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
-  ? 4 * 60 * 1000
-  : 4 * 60 * 60 * 1000;
-const PROGRESS_REMINDER_AMOUNT = 30;
+  ? 3 * 60 * 1000
+  : 3 * 60 * 60 * 1000;
+const PROGRESS_REMINDER_AMOUNT = USE_PROGRESS_HABIT_TEST_TIMING ? 30 : 30;
 const PROGRESS_REMINDER_UNIT_MS = USE_PROGRESS_HABIT_TEST_TIMING ? 1000 : 60 * 1000;
 const PROGRESS_REMINDER_UNIT_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
 const PROGRESS_REMINDER_UNIT_PLURAL_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
@@ -54,7 +55,8 @@ export function getProgressReminderWindowMs() {
 
 function getProgressNotificationTrigger(checkpointAvailableAt: number): Notifications.NotificationTriggerInput | null {
   const now = Date.now();
-  const delayMs = Math.max(0, checkpointAvailableAt - now);
+  const safeTargetAt = Math.max(checkpointAvailableAt, now + 1000);
+  const delayMs = Math.max(0, safeTargetAt - now);
 
   if (delayMs <= 1000) {
     return null;
@@ -62,7 +64,7 @@ function getProgressNotificationTrigger(checkpointAvailableAt: number): Notifica
 
   return {
     type: Notifications.SchedulableTriggerInputTypes.DATE,
-    date: new Date(checkpointAvailableAt),
+    date: new Date(safeTargetAt),
     channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
   };
 }
@@ -130,7 +132,8 @@ export async function scheduleProgressHabitNotifications(
   checkpointAvailableAt: number,
   checkpointStatus: 'pending' | 'missed' = 'pending',
   isNextCheckpoint = false,
-  unit?: string
+  unit?: string,
+  existingNotificationIds?: string[] | null
 ) {
   const granted = await requestNotificationPermission();
   const notificationIds: string[] = [];
@@ -150,6 +153,10 @@ export async function scheduleProgressHabitNotifications(
     resolvedCheckpointAvailableAt,
     incomingCheckpointAvailableAt: checkpointAvailableAt
   });
+
+  if (existingNotificationIds?.length) {
+    await cancelScheduledNotifications(existingNotificationIds);
+  }
 
   if (granted) {
     try {
@@ -273,6 +280,22 @@ function getNumber(value: unknown, fallback = 0) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+function hasPassedCheckpointInCurrentCycle(habit: any) {
+  const checkpointResults = Array.isArray(habit?.checkpointResults) && habit.checkpointResults.length > 0
+    ? habit.checkpointResults
+    : Array.from({ length: 5 }, (_, index) => {
+        if (index < getNumber(habit?.completedCheckpoint, 0)) {
+          return 'passed';
+        }
+        if (index < getNumber(habit?.attemptedCheckpoints, 0)) {
+          return 'failed';
+        }
+        return 'pending';
+      });
+
+  return checkpointResults.some((result: string | undefined) => result === 'passed');
+}
+
 export async function reconcileMissedProgressHabit(habit: any) {
   if (!habit || habit.type !== 'progress' || habit.completed || habit.failed) {
     return null;
@@ -289,18 +312,38 @@ export async function reconcileMissedProgressHabit(habit: any) {
   const totalCheckpoint = 5;
   const newAttempted = attemptedCheckpoints + 1;
   const isCompleted = newAttempted >= totalCheckpoint;
+  const checkpointResults = Array.isArray(habit.checkpointResults) && habit.checkpointResults.length > 0
+    ? [...habit.checkpointResults]
+    : Array.from({ length: totalCheckpoint }, (_, index) => {
+        if (index < getNumber(habit.completedCheckpoint, 0)) {
+          return 'passed';
+        }
+        if (index < attemptedCheckpoints) {
+          return 'failed';
+        }
+        return 'pending';
+      });
+
+  const nextIndex = checkpointResults.findIndex((result: string | undefined) => result === 'pending');
+  if (nextIndex !== -1) {
+    checkpointResults[nextIndex] = 'failed';
+  }
+
+  const hasSuccess = hasPassedCheckpointInCurrentCycle({ ...habit, checkpointResults });
 
   if (isCompleted) {
     const nextHabit = {
       ...habit,
       attemptedCheckpoints: newAttempted,
-      completed: true,
-      failed: true,
-      checkpointStatus: 'pending',
+      completed: hasSuccess,
+      failed: !hasSuccess,
+      checkpointStatus: hasSuccess ? 'pending' : 'failed',
       notificationIds: [],
       checkpointAvailableAt: null,
       checkpointReminderDeadlineAt: null,
-      failedAt: Date.now()
+      completedAt: hasSuccess ? Date.now() : null,
+      failedAt: !hasSuccess ? Date.now() : null,
+      checkpointResults
     };
 
     await updateDoc(doc(db, 'habits', habit.id), {
@@ -311,9 +354,12 @@ export async function reconcileMissedProgressHabit(habit: any) {
       notificationIds: nextHabit.notificationIds,
       checkpointAvailableAt: nextHabit.checkpointAvailableAt,
       checkpointReminderDeadlineAt: nextHabit.checkpointReminderDeadlineAt,
-      failedAt: nextHabit.failedAt
+      completedAt: nextHabit.completedAt ?? null,
+      failedAt: nextHabit.failedAt,
+      checkpointResults: nextHabit.checkpointResults
     });
 
+    await saveHistory(habit.userId, habit.name, habit.type, 0, 'failed');
     return nextHabit;
   }
 
@@ -325,7 +371,8 @@ export async function reconcileMissedProgressHabit(habit: any) {
     nextCheckpointAt,
     'missed',
     true,
-    typeof habit.unit === 'string' ? habit.unit : undefined
+    typeof habit.unit === 'string' ? habit.unit : undefined,
+    Array.isArray(habit.notificationIds) ? habit.notificationIds : []
   );
 
   const nextHabit = {
@@ -336,7 +383,8 @@ export async function reconcileMissedProgressHabit(habit: any) {
     failed: false,
     notificationIds: reminderIds,
     checkpointAvailableAt: nextCheckpointAt,
-    checkpointReminderDeadlineAt: nextCheckpointAt + PROGRESS_REMINDER_WINDOW_MS
+    checkpointReminderDeadlineAt: nextCheckpointAt + PROGRESS_REMINDER_WINDOW_MS,
+    checkpointResults
   };
 
   await updateDoc(doc(db, 'habits', habit.id), {
@@ -346,10 +394,60 @@ export async function reconcileMissedProgressHabit(habit: any) {
     failed: nextHabit.failed,
     notificationIds: nextHabit.notificationIds,
     checkpointAvailableAt: nextHabit.checkpointAvailableAt,
-    checkpointReminderDeadlineAt: nextHabit.checkpointReminderDeadlineAt
+    checkpointReminderDeadlineAt: nextHabit.checkpointReminderDeadlineAt,
+    checkpointResults: nextHabit.checkpointResults
   });
 
   return nextHabit;
+}
+
+export async function reschedulePendingProgressHabitsForUser(userId: string) {
+  if (!userId) {
+    return;
+  }
+
+  const habitsSnapshot = await getDocs(
+    query(
+      collection(db, 'habits'),
+      where('userId', '==', userId),
+      where('type', '==', 'progress')
+    )
+  );
+
+  const now = Date.now();
+  const pendingHabits = habitsSnapshot.docs
+    .map((docSnapshot) => ({ id: docSnapshot.id, ...(docSnapshot.data() as any) }))
+    .filter((habit: any) => {
+      const checkpointAvailableAt = getNumber(habit.checkpointAvailableAt, 0);
+      return (
+        habit &&
+        !habit.completed &&
+        !habit.failed &&
+        checkpointAvailableAt > now &&
+        checkpointAvailableAt > 0
+      );
+    });
+
+  await Promise.all(
+    pendingHabits.map(async (habit: any) => {
+      const checkpointAvailableAt = getNumber(habit.checkpointAvailableAt, 0);
+      const checkpointReminderDeadlineAt = getNumber(habit.checkpointReminderDeadlineAt, 0);
+      if (!checkpointAvailableAt || !checkpointReminderDeadlineAt || checkpointAvailableAt <= now) {
+        return null;
+      }
+
+      return scheduleProgressHabitNotifications(
+        habit.id,
+        habit.name,
+        getNumber(habit.checkpointTarget, 0),
+        checkpointAvailableAt,
+        typeof habit.checkpointStatus === 'string' ? habit.checkpointStatus : 'pending',
+        false,
+        typeof habit.unit === 'string' ? habit.unit : undefined,
+        Array.isArray(habit.notificationIds) ? habit.notificationIds : []
+      );
+    })
+  );
 }
 
 export async function reconcileMissedProgressHabitsForUser(userId: string) {

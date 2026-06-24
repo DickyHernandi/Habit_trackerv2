@@ -24,7 +24,6 @@ export async function addUserPoints(
 
   const userData = snapshot.data();
   const currentPoints = userData.points || 0;
-  const userAchievements = userData.achievements || [];
   const newPoints = currentPoints + earnedPoints;
   const newLevel = calculateLevel(newPoints);
   const completedHabits = userData.completedHabits || 0;
@@ -47,53 +46,63 @@ export async function addUserPoints(
 
   await updateDoc(userRef, updateData);
 
+  const updatedSnapshot = await getDoc(userRef);
+  if (!updatedSnapshot.exists()) return;
+
+  const updatedData = updatedSnapshot.data();
+  const updatedPoints = updatedData.points || 0;
+  const updatedAchievements = updatedData.achievements || [];
+  const updatedCompletedHabits = updatedData.completedHabits || 0;
+  const updatedCompletedCheckpoints = updatedData.completedCheckpoints || 0;
+  const updatedCompletedTimedHabits = updatedData.completedTimedHabits || 0;
+
   // Unlock achievements based on points
-  if (newPoints >= 1000 && !userAchievements.includes('Ultimate Tracker')) {
+  if (updatedPoints >= 1000 && !updatedAchievements.includes('Ultimate Tracker')) {
     await unlockAchievement(userId, 'Ultimate Tracker');
   }
 
   // Unlock First Habit (first time with points)
-  if (currentPoints === 0 && earnedPoints > 0 && !userAchievements.includes('First Habit')) {
+  if (updatedCompletedHabits === 1 && earnedPoints > 0 && !updatedAchievements.includes('First Habit')) {
     await unlockAchievement(userId, 'First Habit');
   }
 
   // Unlock First Completion (first habit completed)
-  if (completedHabits === 0 && earnedPoints > 0 && !userAchievements.includes('First Completion')) {
+  if (updatedCompletedHabits === 1 && earnedPoints > 0 && !updatedAchievements.includes('First Completion')) {
     await unlockAchievement(userId, 'First Completion');
   }
 
   // Unlock Checkpoint Beginner (first checkpoint)
-  if (habitType === 'progress' && completedCheckpoints === 0 && !userAchievements.includes('Checkpoint Beginner')) {
+  if (habitType === 'progress' && updatedCompletedCheckpoints === 1 && !updatedAchievements.includes('Checkpoint Beginner')) {
     await unlockAchievement(userId, 'Checkpoint Beginner');
   }
 
   // Unlock Checkpoint Challenger (5 checkpoints)
-  if (habitType === 'progress' && completedCheckpoints + 1 === 5 && !userAchievements.includes('Checkpoint Challenger')) {
+  if (habitType === 'progress' && updatedCompletedCheckpoints === 5 && !updatedAchievements.includes('Checkpoint Challenger')) {
     await unlockAchievement(userId, 'Checkpoint Challenger');
   }
 
   // Unlock Checkpoint Champion (20 checkpoints)
-  if (habitType === 'progress' && completedCheckpoints + 1 === 20 && !userAchievements.includes('Checkpoint Champion')) {
+  if (habitType === 'progress' && updatedCompletedCheckpoints === 20 && !updatedAchievements.includes('Checkpoint Champion')) {
     await unlockAchievement(userId, 'Checkpoint Champion');
   }
 
   // Unlock Timer Starter (first timed habit)
-  if (habitType === 'timed' && completedTimedHabits === 0 && !userAchievements.includes('Timer Starter')) {
+  if (habitType === 'timed' && updatedCompletedTimedHabits === 1 && !updatedAchievements.includes('Timer Starter')) {
     await unlockAchievement(userId, 'Timer Starter');
   }
 
   // Unlock Timer Pro (3 timed habits)
-  if (habitType === 'timed' && completedTimedHabits + 1 === 3 && !userAchievements.includes('Timer Pro')) {
+  if (habitType === 'timed' && updatedCompletedTimedHabits === 3 && !updatedAchievements.includes('Timer Pro')) {
     await unlockAchievement(userId, 'Timer Pro');
   }
 
   // Check for Badge Collector (10 achievements unlocked)
-  if (userAchievements.length === 10 && !userAchievements.includes('Badge Collector')) {
+  if (updatedAchievements.length === 10 && !updatedAchievements.includes('Badge Collector')) {
     await unlockAchievement(userId, 'Badge Collector');
   }
 }
 
-export async function checkHabitCountAchievements(userId: string, habitCount: number) {
+export async function checkHabitCountAchievements(userId: string, habitCount: number, habitType?: string) {
   const userRef = doc(db, 'users', userId);
   const snapshot = await getDoc(userRef);
 
@@ -101,6 +110,14 @@ export async function checkHabitCountAchievements(userId: string, habitCount: nu
 
   const userData = snapshot.data();
   const userAchievements = userData.achievements || [];
+
+  if (habitCount === 1 && !userAchievements.includes('First Habit')) {
+    await unlockAchievement(userId, 'First Habit');
+  }
+
+  if (habitType === 'timed' && habitCount === 1 && !userAchievements.includes('Timer Starter')) {
+    await unlockAchievement(userId, 'Timer Starter');
+  }
 
   // Unlock Habit Builder (5 habits)
   if (habitCount === 5 && !userAchievements.includes('Habit Builder')) {
