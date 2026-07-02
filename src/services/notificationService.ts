@@ -1,6 +1,5 @@
 import * as Notifications from 'expo-notifications';
 import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { Platform } from 'react-native';
 import { db } from './firebase';
 import { addUserPoints } from './gamificationService';
 import { saveHistory } from './historyService';
@@ -25,24 +24,8 @@ const PROGRESS_NEXT_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
   : 3 * 60 * 60 * 1000;
 const PROGRESS_REMINDER_AMOUNT = USE_PROGRESS_HABIT_TEST_TIMING ? 30 : 30;
 const PROGRESS_REMINDER_UNIT_MS = USE_PROGRESS_HABIT_TEST_TIMING ? 1000 : 60 * 1000;
-const PROGRESS_REMINDER_UNIT_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
-const PROGRESS_REMINDER_UNIT_PLURAL_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'detik' : 'menit';
 const PROGRESS_REMINDER_WINDOW_MS = PROGRESS_REMINDER_AMOUNT * PROGRESS_REMINDER_UNIT_MS;
-const PROGRESS_NOTIFICATION_CHANNEL_ID = 'habit-progress-reminders';
 
-// Fungsi ini meminta izin notifikasi ke pengguna supaya reminder dan alert bisa ditampilkan.
-export async function requestNotificationPermission() {
-  const currentPermissions = await Notifications.getPermissionsAsync();
-
-  if (currentPermissions.granted) {
-    console.log('Notification permission already granted');
-    return true;
-  }
-
-  const { status } = await Notifications.requestPermissionsAsync();
-  console.log('Notification permission request result', { status, currentPermissions });
-  return status === 'granted';
-}
 
 // Fungsi ini mengembalikan durasi awal sebelum checkpoint progress pertama tersedia.
 export function getProgressCheckpointDelayMs() {
@@ -57,38 +40,8 @@ export function getProgressReminderWindowMs() {
   return PROGRESS_REMINDER_WINDOW_MS;
 }
 
-function getProgressNotificationTrigger(checkpointAvailableAt: number): Notifications.NotificationTriggerInput | null {
-  const now = Date.now();
-  const safeTargetAt = Math.max(checkpointAvailableAt, now + 1000);
-  const delayMs = Math.max(0, safeTargetAt - now);
-
-  if (delayMs <= 1000) {
-    return null;
-  }
-
-  return {
-    type: Notifications.SchedulableTriggerInputTypes.DATE,
-    date: new Date(safeTargetAt),
-    channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
-  };
-}
-
 function resolveProgressCheckpointAvailableAt(isNextCheckpoint: boolean) {
   return Date.now() + (isNextCheckpoint ? getProgressNextCheckpointDelayMs() : getProgressCheckpointDelayMs());
-}
-
-async function ensureProgressNotificationChannel() {
-  if (Platform.OS !== 'android') {
-    return;
-  }
-
-  await Notifications.setNotificationChannelAsync(PROGRESS_NOTIFICATION_CHANNEL_ID, {
-    name: 'Pengingat Progress Habit',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 250, 250, 250],
-    enableLights: true,
-    lightColor: '#2563EB'
-  });
 }
 
 // Fungsi ini menampilkan notifikasi peringatan saat timer habit timed sedang berjalan dan aplikasi pindah ke latar belakang.
@@ -123,24 +76,12 @@ export async function showTimedHabitFailedNotification(habitName: string) {
   });
 }
 
-function formatProgressTargetNotificationText(checkpointTarget: number, unit?: string) {
-  const targetText = Number.isFinite(checkpointTarget) && checkpointTarget > 0
-    ? `${checkpointTarget}${unit ? ` ${unit}` : ''}`
-    : `${checkpointTarget}`;
-
-  return targetText;
-}
-
 // Fungsi ini menyimpan status checkpoint progress ke Firestore tanpa menjadwalkan notifikasi lokal.
 export async function scheduleProgressHabitNotifications(
   habitId: string,
-  habitName: string,
-  checkpointTarget: number,
   checkpointAvailableAt: number,
   checkpointStatus: 'pending' | 'missed' = 'pending',
-  isNextCheckpoint = false,
-  unit?: string,
-  existingNotificationIds?: string[] | null
+  isNextCheckpoint = false
 ) {
   const fallbackCheckpointAvailableAt = resolveProgressCheckpointAvailableAt(isNextCheckpoint);
   const resolvedCheckpointAvailableAt = Number.isFinite(checkpointAvailableAt) && checkpointAvailableAt > Date.now()
@@ -300,13 +241,9 @@ export async function reconcileMissedProgressHabit(habit: any) {
   const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
   const reminderIds = await scheduleProgressHabitNotifications(
     habit.id,
-    habit.name,
-    getNumber(habit.checkpointTarget, 0),
     nextCheckpointAt,
     'missed',
-    true,
-    typeof habit.unit === 'string' ? habit.unit : undefined,
-    Array.isArray(habit.notificationIds) ? habit.notificationIds : []
+    true
   );
 
   const nextHabit = {
@@ -373,13 +310,9 @@ export async function reschedulePendingProgressHabitsForUser(userId: string) {
 
       return scheduleProgressHabitNotifications(
         habit.id,
-        habit.name,
-        getNumber(habit.checkpointTarget, 0),
         checkpointAvailableAt,
         typeof habit.checkpointStatus === 'string' ? habit.checkpointStatus : 'pending',
-        false,
-        typeof habit.unit === 'string' ? habit.unit : undefined,
-        Array.isArray(habit.notificationIds) ? habit.notificationIds : []
+        false
       );
     })
   );

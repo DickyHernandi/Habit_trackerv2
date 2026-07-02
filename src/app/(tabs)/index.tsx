@@ -116,8 +116,6 @@ export default function HomeScreen() {
     return habit.completed || habit.failed ? 'Siap' : 'Aktif';
   };
 
-  const isHabitCompleted = (habit: any) => habit.type === 'progress' && Boolean(habit.completed);
-
   return (
     <View style={styles.page}>
       <View style={styles.heroCard}>

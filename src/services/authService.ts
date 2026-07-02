@@ -1,15 +1,9 @@
-import Constants from 'expo-constants';
+import { getBackendUrl } from './backendConfig';
 
 // Service ini bertugas menghubungkan frontend dengan backend untuk proses registrasi dan login.
-const BACKEND_URL =
-  // Lebih disarankan menggunakan variabel dari expo config agar bisa diubah sesuai environment (dev, staging, prod).
-  (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
-  // Alternatif fallback jika variabel di atas tidak tersedia, misalnya saat testing lokal.
-  process.env.BACKEND_URL ||
-  'https://habittrackerv2-production.up.railway.app';
-
-// Fungsi ini mengirim data registrasi ke backend dan mengembalikan respons hasil pendaftaran.
+// URL backend dibaca saat runtime agar bisa diubah tanpa build ulang.
 export async function registerUser(username: string, password: string) {
+  const BACKEND_URL = await getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/auth/register`, {
       method: 'POST',
@@ -31,6 +25,7 @@ export async function registerUser(username: string, password: string) {
 
 // Fungsi ini mengirim kredensial login ke backend dan mengembalikan token hasil autentikasi.
 export async function loginUser(username: string, password: string) {
+  const BACKEND_URL = await getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/auth/login`, {
       method: 'POST',
@@ -52,6 +47,7 @@ export async function loginUser(username: string, password: string) {
 
 // Fungsi ini memastikan token pengguna masih berlaku sebelum aplikasi lanjut ke halaman yang membutuhkan sesi login.
 export async function validateToken(token: string) {
+  const BACKEND_URL = await getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/auth/validate`, {
       method: 'POST',
@@ -74,6 +70,7 @@ export async function validateToken(token: string) {
 }
 
 export async function registerDeviceToken(token: string, authToken: string) {
+  const BACKEND_URL = await getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/auth/device-token`, {
       method: 'POST',

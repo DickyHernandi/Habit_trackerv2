@@ -1,15 +1,15 @@
 import {
-    doc,
-    getDoc,
-    increment,
-    updateDoc
+  doc,
+  getDoc,
+  increment,
+  updateDoc
 } from 'firebase/firestore';
 
 import { unlockAchievement } from './achievementService';
 import { db } from './firebase';
 
 import {
-    calculateLevel
+  calculateLevel
 } from '../utils/levelUtils';
 
 // Fungsi ini menambah poin pengguna saat habit selesai, lalu menghitung level dan membuka achievement yang sesuai.
@@ -27,9 +27,6 @@ export async function addUserPoints(
   const currentPoints = userData.points || 0;
   const newPoints = currentPoints + earnedPoints;
   const newLevel = calculateLevel(newPoints);
-  const completedHabits = userData.completedHabits || 0;
-  const completedCheckpoints = userData.completedCheckpoints || 0;
-  const completedTimedHabits = userData.completedTimedHabits || 0;
 
   // Track completion counts
   const updateData: any = {

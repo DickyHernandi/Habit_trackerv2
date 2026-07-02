@@ -44,7 +44,7 @@ export default function AddHabitScreen() {
       const userId = getCurrentUserId();
       const checkpointTarget = type === 'progress' ? Number(target) / TOTAL_PROGRESS_CHECKPOINTS : null;
 
-      const habitRef = await addDoc(collection(db, 'habits'), {
+      await addDoc(collection(db, 'habits'), {
         userId,
         name,
         type,

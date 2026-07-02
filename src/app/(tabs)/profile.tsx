@@ -1,3 +1,4 @@
+import { clearBackendUrl, getBackendUrl, setBackendUrl } from '@/services/backendConfig';
 import { Link } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
+  const [currentBackendUrl, setCurrentBackendUrl] = useState<string | null>(null);
   const { clearAuth, userId } = useAuthStore();
 
   useEffect(() => {
@@ -21,6 +23,15 @@ export default function ProfileScreen() {
 
     return () => unsub();
   }, [userId]);
+
+  useEffect(() => {
+    async function loadBackendUrl() {
+      const url = await getBackendUrl();
+      setCurrentBackendUrl(url);
+    }
+
+    loadBackendUrl();
+  }, []);
 
   function handleLogout() {
     Alert.alert('Logout', 'Apakah kamu yakin ingin logout?', [
@@ -74,6 +85,32 @@ export default function ProfileScreen() {
             <Text style={styles.achievementsButtonText}>Lihat achievements</Text>
           </Pressable>
         </Link>
+
+        <View style={styles.backendDebugSection}>
+          <Text style={styles.sectionTitle}>Debug Backend</Text>
+          <Text style={styles.debugText}>URL saat ini:</Text>
+          <Text style={styles.backendUrlText}>{currentBackendUrl ?? 'Memuat...'}</Text>
+
+          <Pressable
+            style={styles.debugButton}
+            onPress={async () => {
+              await setBackendUrl('https://habittrackerv2-production.up.fly.dev');
+              setCurrentBackendUrl(await getBackendUrl());
+            }}
+          >
+            <Text style={styles.debugButtonText}>Pakai Fly.io</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.debugButton, styles.clearButton]}
+            onPress={async () => {
+              await clearBackendUrl();
+              setCurrentBackendUrl(await getBackendUrl());
+            }}
+          >
+            <Text style={styles.debugButtonText}>Kembali default</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.achievementsSection}>
           <Text style={styles.sectionTitle}>Achievements</Text>
@@ -222,6 +259,40 @@ const styles = StyleSheet.create({
   },
   achievementsButtonText: {
     color: '#FFFFFF',
+    fontWeight: '700'
+  },
+  backendDebugSection: {
+    width: '100%',
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  debugText: {
+    color: '#475569',
+    fontSize: 13,
+    marginBottom: 6
+  },
+  backendUrlText: {
+    color: '#0F172A',
+    fontSize: 13,
+    marginBottom: 10
+  },
+  debugButton: {
+    width: '100%',
+    marginTop: 8,
+    backgroundColor: '#2563EB',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center'
+  },
+  clearButton: {
+    backgroundColor: '#EF4444'
+  },
+  debugButtonText: {
+    color: 'white',
     fontWeight: '700'
   },
   badgePrimary: {

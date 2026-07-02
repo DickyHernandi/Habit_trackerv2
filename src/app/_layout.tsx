@@ -1,9 +1,9 @@
 import { AuthModal } from '@/components/auth/AuthModal';
 import { registerDeviceToken } from '@/services/authService';
+import { getBackendUrl } from '@/services/backendConfig';
 import { reconcileMissedProgressHabitsForUser } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Slot, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
+    // Inisialisasi notifikasi Expo untuk perangkat ini.
     async function initNotifications() {
       const { status } = await Notifications.getPermissionsAsync();
       if (status === 'granted') {
@@ -32,16 +33,13 @@ export default function RootLayout() {
       }
     }
 
-    const BACKEND_URL =
-      (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
-      process.env.BACKEND_URL ||
-      'https://habittrackerv2-production.up.railway.app';
-
+    // Pulihkan sesi auth dan rekonsiliasi habit progress yang terlewat.
     async function checkAuth() {
       try {
         await restoreSession();
         const userId = useAuthStore.getState().userId;
         if (userId) {
+          const BACKEND_URL = await getBackendUrl();
           try {
             await fetch(`${BACKEND_URL}/reconcile-missed-progress?userId=${encodeURIComponent(userId)}`);
             await reconcileMissedProgressHabitsForUser(userId);
@@ -56,6 +54,7 @@ export default function RootLayout() {
       }
     }
 
+    // Atur cara notifikasi ditangani saat app berada di foreground.
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -66,6 +65,7 @@ export default function RootLayout() {
       })
     });
 
+    // Catat notifikasi yang diterima saat aplikasi sedang berjalan.
     const receivedSubscription = Notifications.addNotificationReceivedListener(async (notification) => {
       console.log('Notification received while app is running', {
         title: notification.request.content.title,
@@ -74,6 +74,7 @@ export default function RootLayout() {
       });
     });
 
+    // Tangani tap notifikasi dan buka layar habit terkait.
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const habitId = response.notification.request.content.data?.habitId;
       if (habitId) {
@@ -88,6 +89,7 @@ export default function RootLayout() {
     initNotifications();
     checkAuth();
 
+    // Saat app kembali aktif, rekonsiliasi lagi progress yang terlewat.
     const appStateSubscription = AppState.addEventListener('change', async (state) => {
       if (state === 'active') {
         const userId = useAuthStore.getState().userId;
@@ -110,7 +112,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      {/* Tampilkan modal login jika user belum terautentikasi. */}
       <AuthModal visible={!isAuthenticated} />
+      {/* Render halaman yang sesuai hanya jika user sudah login. */}
       {isAuthenticated && <Slot />}
     </ThemeProvider>
   );

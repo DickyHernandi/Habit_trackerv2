@@ -20,7 +20,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setAuth, setError } = useAuthStore();
+  const { setAuth } = useAuthStore();
 
   async function handleLogin() {
     if (!username.trim() || !password.trim()) {
