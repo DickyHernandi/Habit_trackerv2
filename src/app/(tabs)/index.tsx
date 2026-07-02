@@ -10,8 +10,8 @@ const TYPE_COLOR: Record<string, string> = {
   progress: '#2563EB'
 };
 
-// Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
-const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
+// Durasi cooldown untuk habit progress agar pengguna tidak bisa langsung mengulang habit yang sama setelah selesai atau gagal.
+const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 menit untuk testing
 
 // Fungsi ini membantu mengubah nilai createdAt dari Firestore menjadi timestamp yang bisa dibandingkan secara konsisten.
 function getCreatedAtValue(createdAt: any) {
@@ -47,11 +47,13 @@ export default function HomeScreen() {
     const unsub = onSnapshot(
       q,
       snapshot => {
+        // Menghasilkan Array dari dokumen habit
         const data = (snapshot.docs
           .map(doc => ({
             id: doc.id,
             ...doc.data()
           })) as any[])
+          // Mengurutkan habit berdasarkan waktu pembuatan agar yang terbaru muncul di atas.
           .sort((a, b) => getCreatedAtValue(b.createdAt) - getCreatedAtValue(a.createdAt));
 
         console.log('[HomeScreen] Loaded habits:', data.length, data.map(h => ({ name: h.name, type: h.type })));
@@ -62,7 +64,7 @@ export default function HomeScreen() {
         setHabits([]);
       }
     );
-
+    // Menyimpan fungsi unsub agar bisa dipanggil saat komponen dilepas dari layar.
     unsubRef.current = unsub;
     return () => {
       console.log('[HomeScreen] Unsubscribing from habits listener');
@@ -89,12 +91,12 @@ export default function HomeScreen() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
+  // Menghitung jumlah habit progress yang sudah selesai untuk menampilkan ringkasan progres.
   const completedCount = useMemo(
     () => habits.filter(habit => habit.type === 'progress' && habit.completed).length,
     [habits]
   );
-
+  // Menghitung persentase progres dari habit yang sudah selesai dibandingkan total habit yang ada.
   const progressPercent = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
 
   // Menentukan status habit yang tampil di kartu, misalnya Aktif, Cooldown, atau Siap.
