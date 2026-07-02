@@ -1,74 +1,12 @@
-# Habit Tracker Backend
+---
+title: Habit Tracker Backend
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+sdk_version: "1.0"
+app_file: server.js
+pinned: false
+---
 
-Simple Node.js + Express backend for user authentication.
-
-## Setup
-
-1. **Get Firebase Service Account Key**
-   - Go to Firebase Console > Project Settings > Service Accounts
-   - Click "Generate New Private Key"
-   - Save as `serviceAccountKey.json` in this backend folder
-
-2. **Install Dependencies**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-3. **Create .env file**
-   ```bash
-   cp .env.example .env
-   ```
-   Then update `.env` with:
-   - `JWT_SECRET` - any secure random string
-   - `FIREBASE_PROJECT_ID` - your Firebase project ID
-   - `PORT` - default is 3000
-
-4. **Run the server**
-   ```bash
-   npm start        # Production
-   npm run dev      # Development (auto-reload)
-   ```
-
-5. **Generate Railway secret value**
-   ```bash
-   npm run encode-service-account
-   ```
-
-   Copy the printed value into your Railway environment as `SERVICE_ACCOUNT_BASE64`.
-
-## Railway deployment notes
-
-- Do not rely on `serviceAccountKey.json` being present during deployment.
-- Use Railway secrets to store `SERVICE_ACCOUNT_BASE64`.
-- If you prefer to deploy with a file, upload it through Railway's file/secret management instead of committing it to Git.
-
-## API Endpoints
-
-### Register
-```
-POST /auth/register
-Body: { "username": "john", "password": "password123" }
-Response: { "success": true, "token": "...", "userId": "...", "username": "john" }
-```
-
-### Login
-```
-POST /auth/login
-Body: { "username": "john", "password": "password123" }
-Response: { "success": true, "token": "...", "userId": "...", "username": "john" }
-```
-
-### Validate Token
-```
-POST /auth/validate
-Headers: { "Authorization": "Bearer <token>" }
-Response: { "success": true, "userId": "...", "username": "john" }
-```
-
-## Notes
-
-- Usernames are stored in lowercase (case-insensitive)
-- Passwords are hashed with bcryptjs
-- Tokens expire after 30 days
-- Users created in two collections: `auth_users` (for auth) and `users` (for app data)
+This Space runs the Habit Tracker backend using Docker.

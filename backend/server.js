@@ -24,7 +24,9 @@ app.use('/auth', authRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
-
+app.get('/', (req, res) => {
+  res.send('Habit Tracker backend is running');
+});
 // Endpoint debug ini membantu memastikan koneksi ke Firestore berjalan dengan baik sebelum fitur lain dipakai.
 app.get('/debug/firestore', async (req, res) => {
   try {
