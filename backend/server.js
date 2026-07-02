@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './authRoutes.js';
 import { db } from './firebaseConfig.js';
-import { reconcileMissedProgressHabits } from './progressReconciler.js';
+import { reconcileMissedProgressHabits, sendPendingProgressReminderNotifications } from './progressReconciler.js';
 
 const fileDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(fileDir, '.env') });
@@ -63,6 +63,7 @@ function startMissedProgressScheduler() {
 
   setInterval(async () => {
     try {
+      await sendPendingProgressReminderNotifications();
       const reconciled = await reconcileMissedProgressHabits();
       if (reconciled.length > 0) {
         console.log(`Reconciled ${reconciled.length} missed progress habit(s)`);

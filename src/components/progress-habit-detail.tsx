@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { db } from '../services/firebase';
 import { addUserPoints } from '../services/gamificationService';
 import { saveHistory } from '../services/historyService';
-import { cancelScheduledNotifications, getProgressCheckpointDelayMs, getProgressNextCheckpointDelayMs, getProgressReminderWindowMs, scheduleProgressHabitNotifications } from '../services/notificationService';
+import { getProgressCheckpointDelayMs, getProgressNextCheckpointDelayMs, getProgressReminderWindowMs } from '../services/notificationService';
 import { getStreakBonus, updateUserStreak } from '../services/streakService';
 import { getCurrentUserId } from '../services/userService';
 
@@ -254,8 +254,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const checkpointResults = applyCheckpointOutcome(latestHabit, 'failed');
     const hasSuccess = hasPassedCheckpointInCurrentCycle({ ...latestHabit, checkpointResults });
 
-    await cancelScheduledNotifications(latestHabit.notificationIds);
-
     if (isFinalStage) {
       const nextHabit = {
         ...latestHabit,
@@ -291,16 +289,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
-    const reminderIds = await scheduleProgressHabitNotifications(
-      latestHabit.id,
-      latestHabit.name,
-      latestHabit.checkpointTarget,
-      nextCheckpointAt,
-      'pending',
-      true,
-      latestHabit.unit,
-      latestHabit.notificationIds
-    );
 
     const nextHabit = {
       ...latestHabit,
@@ -308,7 +296,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       checkpointStatus: 'pending',
       completed: false,
       failed: false,
-      notificationIds: reminderIds,
+      checkpointIds: latestHabit.checkpointIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       checkpointResults
@@ -338,8 +326,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const totalCheckpoint = getTotalCheckpointCount();
     const isFinalStage = nextAttempted >= totalCheckpoint;
     const checkpointResults = applyCheckpointOutcome(normalizedHabit, 'passed');
-
-    await cancelScheduledNotifications(normalizedHabit.notificationIds);
 
     if (isFinalStage) {
       const checkpointPoints = nextCompletedCheckpoint * 10;
@@ -376,16 +362,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
-    const reminderIds = await scheduleProgressHabitNotifications(
-      normalizedHabit.id,
-      normalizedHabit.name,
-      normalizedHabit.checkpointTarget,
-      nextCheckpointAt,
-      'pending',
-      true,
-      normalizedHabit.unit,
-      normalizedHabit.notificationIds
-    );
 
     const nextHabit = {
       ...normalizedHabit,
@@ -394,7 +370,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       completed: false,
       failed: false,
       checkpointStatus: 'pending',
-      notificationIds: reminderIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       checkpointResults
@@ -415,8 +390,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const isFinalStage = newAttempted >= totalCheckpoint;
     const checkpointResults = applyCheckpointOutcome(normalizedHabit, 'failed');
     const hasSuccess = hasPassedCheckpointInCurrentCycle({ ...normalizedHabit, checkpointResults });
-
-    await cancelScheduledNotifications(normalizedHabit.notificationIds);
 
     if (isFinalStage) {
       const nextHabit = {
@@ -453,16 +426,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
-    const reminderIds = await scheduleProgressHabitNotifications(
-      normalizedHabit.id,
-      normalizedHabit.name,
-      normalizedHabit.checkpointTarget,
-      nextCheckpointAt,
-      'pending',
-      true,
-      normalizedHabit.unit,
-      normalizedHabit.notificationIds
-    );
 
     const nextHabit = {
       ...normalizedHabit,
@@ -470,7 +433,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       checkpointStatus: 'pending',
       completed: false,
       failed: false,
-      notificationIds: reminderIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       checkpointResults
@@ -505,16 +467,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const nextCheckpointAt = Date.now() + getProgressCheckpointDelayMs();
-    const reminderIds = await scheduleProgressHabitNotifications(
-      normalizedHabit.id,
-      normalizedHabit.name,
-      normalizedHabit.checkpointTarget,
-      nextCheckpointAt,
-      'pending',
-      false,
-      normalizedHabit.unit,
-      normalizedHabit.notificationIds
-    );
 
     const nextHabit = {
       ...normalizedHabit,
@@ -523,7 +475,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       completed: false,
       failed: false,
       checkpointStatus: 'pending',
-      notificationIds: reminderIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       completedAt: null,
@@ -539,16 +490,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
   // Fungsi ini memulai ulang siklus habit setelah selesai atau gagal, agar pengguna bisa mencoba lagi.
   async function resetProgressHabit() {
     const nextCheckpointAt = Date.now() + getProgressCheckpointDelayMs();
-    const reminderIds = await scheduleProgressHabitNotifications(
-      normalizedHabit.id,
-      normalizedHabit.name,
-      normalizedHabit.checkpointTarget,
-      nextCheckpointAt,
-      'pending',
-      false,
-      normalizedHabit.unit,
-      normalizedHabit.notificationIds
-    );
 
     const resetHabit = {
       ...normalizedHabit,
@@ -557,7 +498,6 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       completed: false,
       failed: false,
       checkpointStatus: 'pending',
-      notificationIds: reminderIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       completedAt: null,

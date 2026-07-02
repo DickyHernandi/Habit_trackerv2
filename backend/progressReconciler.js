@@ -36,6 +36,83 @@ async function finalizeProgressHabitCompletion(habit, hasSuccess) {
   });
 }
 
+async function getUserPushTokens(userId) {
+  if (!userId) {
+    return [];
+  }
+
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    return [];
+  }
+
+  const userData = userDoc.data();
+  return Array.isArray(userData?.pushTokens) ? userData.pushTokens : [];
+}
+
+async function sendPushNotificationToUser(userId, title, body, data = {}) {
+  const tokens = await getUserPushTokens(userId);
+  if (!tokens.length) {
+    return;
+  }
+
+  const messages = tokens.map((token) => ({
+    token,
+    notification: {
+      title,
+      body
+    },
+    data: {
+      ...data,
+      userId: String(userId)
+    }
+  }));
+
+  try {
+    const response = await admin.messaging().sendAll(messages);
+    if (response.failureCount > 0) {
+      console.warn('Some push notifications failed to send', response.responses);
+    }
+  } catch (error) {
+    console.error('Unable to send push notification', error);
+  }
+}
+
+export async function sendPendingProgressReminderNotifications() {
+  const now = Date.now();
+  const snapshot = await db.collection('habits')
+    .where('type', '==', 'progress')
+    .where('completed', '==', false)
+    .where('failed', '==', false)
+    .where('checkpointAvailableAt', '<=', now)
+    .where('checkpointReminderDeadlineAt', '>', now)
+    .get();
+
+  const promises = [];
+  snapshot.docs.forEach((docSnap) => {
+    const habit = { id: docSnap.id, ...(docSnap.data() || {}) };
+    const lastSentAt = getNumber(habit.progressNotificationSentAt, 0);
+    if (lastSentAt >= getNumber(habit.checkpointAvailableAt, 0)) {
+      return;
+    }
+
+    promises.push((async () => {
+      await sendPushNotificationToUser(
+        habit.userId,
+        'Checkpoint tersedia',
+        `Checkpoint untuk ${habit.name} sudah tersedia. Buka aplikasi untuk mengonfirmasi.`,
+        { habitId: habit.id, type: 'progress-available' }
+      );
+
+      await db.collection('habits').doc(habit.id).update({
+        progressNotificationSentAt: Date.now()
+      });
+    })());
+  });
+
+  await Promise.all(promises);
+}
+
 const USE_PROGRESS_HABIT_TEST_TIMING = true;
 const PROGRESS_NEXT_CHECKPOINT_DELAY_MS = USE_PROGRESS_HABIT_TEST_TIMING
   ? 4 * 60 * 1000
@@ -153,6 +230,15 @@ export async function reconcileMissedProgressHabits({ userId } = {}) {
 
     await db.collection('habits').doc(habit.id).update(updatePayload);
     await finalizeProgressHabitCompletion(habit, hasSuccess);
+
+    if (nextAttemptedCheckpoints < totalCheckpoint) {
+      await sendPushNotificationToUser(
+        habit.userId,
+        'Checkpoint gagal',
+        `Checkpoint untuk ${habit.name} terlewat. Checkpoint berikutnya akan dijadwalkan otomatis.`,
+        { habitId: habit.id, type: 'progress-failure' }
+      );
+    }
 
     updates.push({
       id: habit.id,

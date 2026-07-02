@@ -131,7 +131,7 @@ function formatProgressTargetNotificationText(checkpointTarget: number, unit?: s
   return targetText;
 }
 
-// Fungsi ini menjadwalkan reminder dan deadline untuk checkpoint progress, agar pengguna mendapat pengingat sebelum waktunya habis.
+// Fungsi ini menyimpan status checkpoint progress ke Firestore tanpa menjadwalkan notifikasi lokal.
 export async function scheduleProgressHabitNotifications(
   habitId: string,
   habitName: string,
@@ -142,115 +142,20 @@ export async function scheduleProgressHabitNotifications(
   unit?: string,
   existingNotificationIds?: string[] | null
 ) {
-  const granted = await requestNotificationPermission();
-  const notificationIds: string[] = [];
   const fallbackCheckpointAvailableAt = resolveProgressCheckpointAvailableAt(isNextCheckpoint);
   const resolvedCheckpointAvailableAt = Number.isFinite(checkpointAvailableAt) && checkpointAvailableAt > Date.now()
     ? checkpointAvailableAt
     : fallbackCheckpointAvailableAt;
-
-  console.log('Scheduling progress notification', {
-    habitId,
-    habitName,
-    checkpointTarget,
-    granted,
-    checkpointStatus,
-    isNextCheckpoint,
-    fallbackCheckpointAvailableAt,
-    resolvedCheckpointAvailableAt,
-    incomingCheckpointAvailableAt: checkpointAvailableAt
-  });
-
-  if (existingNotificationIds?.length) {
-    await cancelScheduledNotifications(existingNotificationIds);
-  }
-
-  if (granted) {
-    try {
-      await ensureProgressNotificationChannel();
-
-      const reminderTrigger = getProgressNotificationTrigger(resolvedCheckpointAvailableAt);
-      const reminderNotificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Progress Habit Reminder',
-          body: `Apakah kamu sudah menyelesaikan ${formatProgressTargetNotificationText(checkpointTarget, unit)} untuk ${habitName}? Kamu punya ${PROGRESS_REMINDER_AMOUNT} ${PROGRESS_REMINDER_UNIT_PLURAL_LABEL} untuk mengonfirmasi.`,
-          priority: 'max',
-          vibrate: [0, 250, 250, 250],
-          data: {
-            habitId,
-            type: 'progress-reminder'
-          }
-        },
-        trigger: reminderTrigger
-          ? {
-              ...reminderTrigger,
-              channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
-            }
-          : null
-      });
-
-      notificationIds.push(reminderNotificationId);
-
-      const deadlineAt = resolvedCheckpointAvailableAt + PROGRESS_REMINDER_WINDOW_MS;
-      const deadlineTrigger = getProgressNotificationTrigger(deadlineAt);
-      const deadlineNotificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Progress Habit Missed',
-          body: `Kamu melewatkan checkpoint untuk ${habitName}. Checkpoint berikutnya akan dijadwalkan otomatis.`,
-          priority: 'max',
-          vibrate: [0, 250, 250, 250],
-          data: {
-            habitId,
-            type: 'progress-failure'
-          }
-        },
-        trigger: deadlineTrigger
-          ? {
-              ...deadlineTrigger,
-              channelId: PROGRESS_NOTIFICATION_CHANNEL_ID
-            }
-          : null
-      });
-
-      notificationIds.push(deadlineNotificationId);
-
-      console.log('Progress notification scheduled', {
-        habitId,
-        reminderNotificationId,
-        deadlineNotificationId,
-        resolvedCheckpointAvailableAt,
-        deadlineAt,
-        reminderTrigger,
-        deadlineTrigger
-      });
-
-      const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('Scheduled notifications after progress schedule', {
-        count: allScheduled.length,
-        requests: allScheduled.map((request) => ({
-          identifier: request.identifier,
-          trigger: request.trigger,
-          content: request.content
-        }))
-      });
-    } catch (notificationError) {
-      console.warn('Unable to schedule progress reminder', {
-        habitId,
-        resolvedCheckpointAvailableAt,
-        notificationError
-      });
-    }
-  }
 
   await updateDoc(doc(db, 'habits', habitId), {
     checkpointAvailableAt: resolvedCheckpointAvailableAt,
     checkpointReminderDeadlineAt: resolvedCheckpointAvailableAt + PROGRESS_REMINDER_WINDOW_MS,
     checkpointStatus,
     failed: false,
-    notificationIds
+    notificationIds: []
   });
 
-  return notificationIds;
+  return [];
 }
 
 // Fungsi ini membatalkan satu notifikasi yang sudah dijadwalkan sebelumnya.

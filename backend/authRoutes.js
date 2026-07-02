@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import express from 'express';
-import { db } from './firebaseConfig.js';
+import admin, { db } from './firebaseConfig.js';
 import { generateToken, verifyToken } from './middleware.js';
 
 const router = express.Router();
@@ -57,7 +57,8 @@ router.post('/register', async (req, res) => {
       level: 1,
       streak: 0,
       lastCompletedDate: null,
-      createdAt: new Date()
+      createdAt: new Date(),
+      pushTokens: []
     });
 
     res.status(201).json({
@@ -117,6 +118,26 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login Gagal' });
+  }
+});
+
+// Route untuk mendaftarkan token push device pengguna agar backend dapat mengirim notifikasi.
+router.post('/device-token', verifyToken, async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Token push tidak valid' });
+    }
+
+    await db.collection('users').doc(req.userId).set({
+      pushTokens: admin.firestore.FieldValue.arrayUnion(token)
+    }, { merge: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Register device token error:', error);
+    res.status(500).json({ error: 'Gagal mendaftarkan token device' });
   }
 });
 

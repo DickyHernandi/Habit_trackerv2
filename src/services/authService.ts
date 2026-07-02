@@ -72,3 +72,26 @@ export async function validateToken(token: string) {
     throw error;
   }
 }
+
+export async function registerDeviceToken(token: string, authToken: string) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/auth/device-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ token })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Gagal mendaftarkan device token');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}

@@ -1,5 +1,6 @@
 import { AuthModal } from '@/components/auth/AuthModal';
-import { reconcileMissedProgressHabitsForUser, requestNotificationPermission, reschedulePendingProgressHabitsForUser } from '@/services/notificationService';
+import { registerDeviceToken } from '@/services/authService';
+import { reconcileMissedProgressHabitsForUser } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import Constants from 'expo-constants';
@@ -16,7 +17,19 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function initNotifications() {
-      await requestNotificationPermission();
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === 'granted') {
+        const tokenData = await Notifications.getExpoPushTokenAsync();
+        const token = tokenData.data;
+        const userToken = useAuthStore.getState().token;
+        if (token && userToken) {
+          try {
+            await registerDeviceToken(token, userToken);
+          } catch (error) {
+            console.warn('Failed to register device token', error);
+          }
+        }
+      }
     }
 
     const BACKEND_URL =
@@ -31,11 +44,10 @@ export default function RootLayout() {
         if (userId) {
           try {
             await fetch(`${BACKEND_URL}/reconcile-missed-progress?userId=${encodeURIComponent(userId)}`);
+            await reconcileMissedProgressHabitsForUser(userId);
           } catch (backendError) {
             console.warn('Backend progress reconciliation failed:', backendError);
           }
-          await reschedulePendingProgressHabitsForUser(userId);
-          await reconcileMissedProgressHabitsForUser(userId);
         }
       } catch (error) {
         console.error('Auth restore failed:', error);
@@ -60,13 +72,6 @@ export default function RootLayout() {
         body: notification.request.content.body,
         data: notification.request.content.data
       });
-
-      const habitId = notification.request.content.data?.habitId;
-      const userId = useAuthStore.getState().userId;
-      if (habitId && userId) {
-        await reschedulePendingProgressHabitsForUser(userId);
-        await reconcileMissedProgressHabitsForUser(userId);
-      }
     });
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
