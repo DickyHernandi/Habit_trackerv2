@@ -12,6 +12,7 @@ import {
     calculateLevel
 } from '../utils/levelUtils';
 
+// Fungsi ini menambah poin pengguna saat habit selesai, lalu menghitung level dan membuka achievement yang sesuai.
 export async function addUserPoints(
   userId: string,
   earnedPoints: number,
@@ -102,6 +103,7 @@ export async function addUserPoints(
   }
 }
 
+// Fungsi ini memeriksa apakah jumlah habit yang dibuat sudah memenuhi syarat untuk membuka achievement tertentu.
 export async function checkHabitCountAchievements(userId: string, habitCount: number, habitType?: string) {
   const userRef = doc(db, 'users', userId);
   const snapshot = await getDoc(userRef);
@@ -130,6 +132,7 @@ export async function checkHabitCountAchievements(userId: string, habitCount: nu
   }
 }
 
+// Fungsi ini mengecek jumlah history habit untuk membuka achievement terkait riwayat aktivitas pengguna.
 export async function checkHistoryCountAchievements(userId: string, historyCount: number) {
   const userRef = doc(db, 'users', userId);
   const snapshot = await getDoc(userRef);

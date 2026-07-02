@@ -13,19 +13,19 @@ dotenv.config({ path: path.resolve(fileDir, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware dasar: mengizinkan request dari frontend dan membaca body JSON.
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Route autentikasi dipisahkan ke file tersendiri agar kode lebih terstruktur.
 app.use('/auth', authRoutes);
 
-// Health check
+// Endpoint /health dipakai untuk mengecek apakah server backend sedang aktif dan siap menerima request.
 app.get('/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
 
-// Firestore diagnostic endpoint
+// Endpoint debug ini membantu memastikan koneksi ke Firestore berjalan dengan baik sebelum fitur lain dipakai.
 app.get('/debug/firestore', async (req, res) => {
   try {
     const result = await db.collection('auth_users').limit(1).get();
@@ -44,6 +44,7 @@ app.get('/debug/firestore', async (req, res) => {
   }
 });
 
+// Endpoint ini dipakai secara manual untuk menjalankan proses rekonsiliasi habit progres yang terlewat.
 app.get('/reconcile-missed-progress', async (req, res) => {
   const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
 
@@ -56,6 +57,7 @@ app.get('/reconcile-missed-progress', async (req, res) => {
   }
 });
 
+// Fungsi ini menjalankan scheduler berkala untuk memeriksa habit progres yang tidak terselesaikan secara otomatis.
 function startMissedProgressScheduler() {
   const intervalMs = Number(process.env.PROGRESS_RECONCILER_INTERVAL_MS) || 30_000;
 

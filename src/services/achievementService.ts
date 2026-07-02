@@ -1,6 +1,8 @@
 import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
+// Fungsi ini membuka achievement untuk pengguna jika belum pernah unlocked sebelumnya.
+// Proses ini menambahkan nama achievement ke daftar achievements pengguna di Firestore.
 export async function unlockAchievement(userId: string, achievement: string) {
   try {
     const userRef = doc(db, 'users', userId);

@@ -13,6 +13,7 @@ const TYPE_COLOR: Record<string, string> = {
 // Cooldown duration for progress habits (6 minutes for testing, change to 6 hours for production)
 const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 minutes for testing
 
+// Fungsi ini membantu mengubah nilai createdAt dari Firestore menjadi timestamp yang bisa dibandingkan secara konsisten.
 function getCreatedAtValue(createdAt: any) {
   if (!createdAt) return 0;
   if (typeof createdAt?.toDate === 'function') return createdAt.toDate().getTime();
@@ -21,13 +22,14 @@ function getCreatedAtValue(createdAt: any) {
   return 0;
 }
 
+// Layar utama ini menampilkan daftar habit pengguna, ringkasan progres, dan tombol untuk menambah habit baru.
 export default function HomeScreen() {
   const [habits, setHabits] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
   const userId = useAuthStore(state => state.userId);
   const unsubRef = useRef<(() => void) | null>(null);
 
-  // Set up habits listener
+  // Menghubungkan layar ke Firestore agar daftar habit selalu diperbarui saat ada perubahan data.
   useEffect(() => {
     if (!userId) {
       console.log('[HomeScreen] No userId available, clearing habits');
@@ -68,7 +70,7 @@ export default function HomeScreen() {
     };
   }, [userId]);
 
-  // Listen for app state changes to refresh habits when coming back from background
+  // Memantau status aplikasi agar saat pengguna kembali dari latar belakang, layar tetap sinkron.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state: string) => {
       console.log('[HomeScreen] App state changed to:', state);
@@ -80,7 +82,7 @@ export default function HomeScreen() {
     return () => subscription.remove();
   }, [userId]);
 
-  // Update current time for cooldown calculations
+  // Menjaga waktu saat ini terus diperbarui untuk perhitungan cooldown habit progress.
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
@@ -95,6 +97,7 @@ export default function HomeScreen() {
 
   const progressPercent = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
 
+  // Menentukan status habit yang tampil di kartu, misalnya Aktif, Cooldown, atau Siap.
   const getHabitStatus = (habit: any) => {
     if (habit.type !== 'progress') {
       return 'Aktif';

@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 const fileDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(fileDir, '.env') });
 
-// Debug: log whether SERVICE_ACCOUNT_BASE64 is present (no secret value printed)
+// File ini menghubungkan backend ke Firebase Admin SDK.
+// Kunci layanan diambil dari file lokal atau dari environment variable agar aplikasi bisa berjalan di lokal maupun deployment.
 if (process.env.SERVICE_ACCOUNT_BASE64) {
   console.log('DEBUG: SERVICE_ACCOUNT_BASE64 is present in environment');
 } else {

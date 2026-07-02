@@ -8,6 +8,7 @@ import { getCurrentUserId } from '../services/userService';
 
 const TOTAL_PROGRESS_CHECKPOINTS = 5;
 
+// Layar ini digunakan untuk membuat habit baru, baik jenis timed maupun progress.
 export default function AddHabitScreen() {
   const [name, setName] = useState('');
   const [type, setType] = useState<'timed' | 'progress'>('timed');
@@ -16,6 +17,7 @@ export default function AddHabitScreen() {
   const [unit, setUnit] = useState('');
   const router = useRouter();
 
+  // Fungsi ini mengumpulkan input pengguna, menyimpan habit ke Firestore, lalu memberi feedback hasil penyimpanan.
   async function saveHabit() {
     if (!name.trim()) {
       Alert.alert('Kesalahan', 'Silakan masukkan nama habit');

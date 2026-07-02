@@ -1,12 +1,14 @@
 import Constants from 'expo-constants';
 
+// Service ini bertugas menghubungkan frontend dengan backend untuk proses registrasi dan login.
 const BACKEND_URL =
-  // Prefer Expo runtime config for EAS builds
+  // Lebih disarankan menggunakan variabel dari expo config agar bisa diubah sesuai environment (dev, staging, prod).
   (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
-  // Fall back to environment variable (web/local) or the production URL
+  // Alternatif fallback jika variabel di atas tidak tersedia, misalnya saat testing lokal.
   process.env.BACKEND_URL ||
   'https://habittrackerv2-production.up.railway.app';
 
+// Fungsi ini mengirim data registrasi ke backend dan mengembalikan respons hasil pendaftaran.
 export async function registerUser(username: string, password: string) {
   try {
     const response = await fetch(`${BACKEND_URL}/auth/register`, {
@@ -27,6 +29,7 @@ export async function registerUser(username: string, password: string) {
   }
 }
 
+// Fungsi ini mengirim kredensial login ke backend dan mengembalikan token hasil autentikasi.
 export async function loginUser(username: string, password: string) {
   try {
     const response = await fetch(`${BACKEND_URL}/auth/login`, {
@@ -47,6 +50,7 @@ export async function loginUser(username: string, password: string) {
   }
 }
 
+// Fungsi ini memastikan token pengguna masih berlaku sebelum aplikasi lanjut ke halaman yang membutuhkan sesi login.
 export async function validateToken(token: string) {
   try {
     const response = await fetch(`${BACKEND_URL}/auth/validate`, {

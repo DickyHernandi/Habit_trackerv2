@@ -1,5 +1,7 @@
 import admin, { db } from './firebaseConfig.js';
 
+// Fungsi ini dipanggil setelah sistem memutuskan apakah habit progres dianggap berhasil atau gagal.
+// Jika berhasil, poin dan statistik pengguna akan ditambah; jika gagal, data akan dicatat ke history sebagai kegagalan.
 async function finalizeProgressHabitCompletion(habit, hasSuccess) {
   if (!habit?.userId) {
     return;
@@ -42,11 +44,15 @@ const PROGRESS_REMINDER_AMOUNT = 30;
 const PROGRESS_REMINDER_UNIT_MS = USE_PROGRESS_HABIT_TEST_TIMING ? 1000 : 60 * 1000;
 const PROGRESS_REMINDER_WINDOW_MS = PROGRESS_REMINDER_AMOUNT * PROGRESS_REMINDER_UNIT_MS;
 
+// Fungsi helper ini memastikan nilai yang dibaca dari Firestore selalu bisa diubah menjadi angka.
+// Jika datanya bukan angka, sistem akan memakai nilai fallback agar aplikasi tidak error.
 function getNumber(value, fallback = 0) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+// Fungsi ini membangun status setiap checkpoint berdasarkan data habit saat ini.
+// Hasilnya dipakai untuk mengetahui checkpoint mana yang sudah lewat, mana yang gagal, dan mana yang masih menunggu.
 function buildCheckpointResults(habit) {
   const completedCheckpoint = getNumber(habit?.completedCheckpoint, 0);
   const attemptedCheckpoints = getNumber(habit?.attemptedCheckpoints, 0);
@@ -71,6 +77,8 @@ function buildCheckpointResults(habit) {
   });
 }
 
+// Fungsi ini menandai checkpoint berikutnya sebagai gagal ketika habit melewati batas waktu.
+// Biasanya dipanggil saat sistem mendeteksi habit progres yang tidak diselesaikan tepat waktu.
 function markNextCheckpointFailed(habit) {
   const checkpointResults = buildCheckpointResults(habit);
   const nextIndex = checkpointResults.findIndex((result) => result === 'pending');
@@ -82,10 +90,14 @@ function markNextCheckpointFailed(habit) {
   return checkpointResults;
 }
 
+// Fungsi ini memeriksa apakah dalam siklus saat ini ada checkpoint yang berhasil dilewati.
+// Informasi ini penting untuk menentukan apakah habit akhirnya dianggap berhasil atau gagal.
 function hasPassedCheckpointInCurrentCycle(habit) {
   return buildCheckpointResults(habit).some((result) => result === 'passed');
 }
 
+// Fungsi utama ini memeriksa habit bertipe progress yang sudah melewati deadline checkpoint.
+// Saat ditemukan, sistem akan meng-update status habit, menandai checkpoint yang terlewat, dan mencatat hasil akhir ke database.
 export async function reconcileMissedProgressHabits({ userId } = {}) {
   const now = Date.now();
   let query = db.collection('habits')

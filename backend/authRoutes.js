@@ -5,23 +5,24 @@ import { generateToken, verifyToken } from './middleware.js';
 
 const router = express.Router();
 
-// POST /auth/register - Create a new user
+// Route register dipakai saat pengguna baru membuat akun.
+// Fungsi ini memvalidasi input, memastikan username belum dipakai, lalu menyimpan user dan mengirim token login.
 router.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ error: 'Username dan Password diperlukan' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return res.status(400).json({ error: 'Password harus 6 karakter atau lebih' });
     }
 
-    // Convert username to lowercase for case-insensitive storage
+    // Mengubah username menjadi huruf kecil agar tidak case-sensitive dan menghapus spasi di awal/akhir.
     const usernameLower = username.toLowerCase().trim();
 
-    // Check if username already exists
+    // Cek apakah username sudah ada di Firestore.
     const existingUser = await db
       .collection('auth_users')
       .where('username', '==', usernameLower)
@@ -29,13 +30,13 @@ router.post('/register', async (req, res) => {
       .get();
 
     if (!existingUser.empty) {
-      return res.status(409).json({ error: 'Username already taken' });
+      return res.status(409).json({ error: 'Username sudah ada' });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user document
+    // Buat user baru di Firestore dengan koleksi "auth_users""
     const userRef = await db.collection('auth_users').add({
       username: usernameLower,
       password: hashedPassword,
@@ -46,10 +47,10 @@ router.post('/register', async (req, res) => {
       lastCompletedDate: null
     });
 
-    // Generate token
+    // Buat token
     const token = generateToken(userRef.id, usernameLower);
 
-    // Also initialize user in the main users collection (for compatibility with existing habits)
+    // Buat juga user di koleksi "user"
     await db.collection('users').doc(userRef.id).set({
       username: usernameLower,
       points: 0,
@@ -67,23 +68,23 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: 'Registrasi Gagal' });
   }
 });
 
-// POST /auth/login - Authenticate user
+// Route login memeriksa username dan password, lalu mengembalikan token jika kredensial sesuai.
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ error: 'Username dan Password diperlukan' });
     }
 
-    // Convert username to lowercase
+    // Ubah username menjadi huruf kecil agar tidak case-sensitive dan menghapus spasi di awal/akhir.
     const usernameLower = username.toLowerCase().trim();
 
-    // Find user
+    // Cari user di Firestore berdasarkan username.
     const userSnapshot = await db
       .collection('auth_users')
       .where('username', '==', usernameLower)
@@ -91,20 +92,20 @@ router.post('/login', async (req, res) => {
       .get();
 
     if (userSnapshot.empty) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Username atau Password salah' });
     }
 
     const userDoc = userSnapshot.docs[0];
     const userData = userDoc.data();
 
-    // Verify password
+    // Cek password
     const passwordMatch = await bcrypt.compare(password, userData.password);
 
     if (!passwordMatch) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Username atau Password salah' });
     }
 
-    // Generate token
+    // Buat token
     const token = generateToken(userDoc.id, usernameLower);
 
     res.json({
@@ -115,11 +116,11 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login Gagal' });
   }
 });
 
-// POST /auth/validate - Check if token is valid
+// Route validate dipakai untuk memeriksa apakah token pengguna masih valid sebelum fitur lain dibuka.
 router.post('/validate', verifyToken, async (req, res) => {
   try {
     res.json({
@@ -128,7 +129,7 @@ router.post('/validate', verifyToken, async (req, res) => {
       username: req.username
     });
   } catch (error) {
-    res.status(401).json({ error: 'Token validation failed' });
+    res.status(401).json({ error: 'Verifikasi Token Gagal' });
   }
 });
 

@@ -17,6 +17,7 @@ type Props = {
   setHabit: (updater: any) => void;
 };
 
+// Fungsi helper untuk mengubah nilai apa pun menjadi angka yang aman dipakai dalam logika habit.
 function getNumber(value: unknown, fallback = 0) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : fallback;
@@ -26,6 +27,7 @@ function getTotalCheckpointCount() {
   return TOTAL_PROGRESS_CHECKPOINTS;
 }
 
+// Membuat status default checkpoint saat data belum ada atau belum diproses.
 function getDefaultCheckpointResults(habitData: any) {
   const completedCheckpoint = getNumber(habitData?.completedCheckpoint, 0);
   const attemptedCheckpoints = getNumber(habitData?.attemptedCheckpoints, 0);
@@ -43,6 +45,7 @@ function getDefaultCheckpointResults(habitData: any) {
   });
 }
 
+// Menormalkan hasil checkpoint dari Firestore agar bentuk datanya konsisten di seluruh komponen.
 function normalizeCheckpointResults(habitData: any) {
   const rawCheckpointResults = Array.isArray(habitData?.checkpointResults)
     ? habitData.checkpointResults
@@ -57,6 +60,7 @@ function normalizeCheckpointResults(habitData: any) {
   return getDefaultCheckpointResults(habitData);
 }
 
+// Memeriksa apakah dalam siklus saat ini ada checkpoint yang sudah berhasil dilewati.
 function hasPassedCheckpointInCurrentCycle(habitData: any) {
   const checkpointResults = Array.isArray(habitData?.checkpointResults) && habitData.checkpointResults.length > 0
     ? habitData.checkpointResults
@@ -90,6 +94,7 @@ function formatProgressTargetText(value: number, unit?: string) {
   return unit ? `${value} ${unit}` : `${value}`;
 }
 
+// Menyusun data habit progress ke format yang lebih mudah dipakai oleh UI dan logika fitur.
 function normalizeProgressHabit(habitData: any) {
   const checkpointAvailableAt = Number.isFinite(habitData?.checkpointAvailableAt)
     ? habitData.checkpointAvailableAt
@@ -125,6 +130,7 @@ function normalizeProgressHabit(habitData: any) {
 
 type CheckpointStepStatus = 'done' | 'failed' | 'current' | 'locked';
 
+// Membuat tampilan visual tiap checkpoint, apakah sudah selesai, gagal, aktif, atau terkunci.
 function buildCheckpointSteps(habit: any): CheckpointStepStatus[] {
   const checkpointResults = Array.isArray(habit?.checkpointResults) && habit.checkpointResults.length > 0
     ? habit.checkpointResults
@@ -157,6 +163,7 @@ function buildCheckpointSteps(habit: any): CheckpointStepStatus[] {
   });
 }
 
+// Menandai checkpoint yang sedang aktif dengan hasil passed atau failed.
 function applyCheckpointOutcome(habit: any, outcome: 'passed' | 'failed') {
   const currentResults = Array.isArray(habit?.checkpointResults) && habit.checkpointResults.length > 0
     ? [...habit.checkpointResults]
@@ -171,6 +178,7 @@ function applyCheckpointOutcome(habit: any, outcome: 'passed' | 'failed') {
   return currentResults;
 }
 
+// Menyimpan perubahan status habit progress ke Firestore agar data tetap konsisten.
 async function persistProgressHabitState(habitId: string, nextHabit: any) {
   await updateDoc(doc(db, 'habits', habitId), {
     completedCheckpoint: getNumber(nextHabit.completedCheckpoint, 0),
@@ -187,6 +195,7 @@ async function persistProgressHabitState(habitId: string, nextHabit: any) {
   });
 }
 
+// Komponen ini mengatur alur interaktif habit progress: mulai, tunggu checkpoint, jawab ya/tidak, lalu simpan hasilnya.
 export function ProgressHabitDetail({ habit, setHabit }: Props) {
   const normalizedHabit = normalizeProgressHabit(habit);
   const [now, setNow] = useState(Date.now());
@@ -227,6 +236,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     };
   }, [normalizedHabit]);
 
+  // Fungsi ini dipanggil ketika checkpoint melewati batas waktu dan dianggap gagal otomatis.
   async function failCurrentProgressCheckpoint() {
     const latestHabit = habitRef.current;
 
@@ -310,6 +320,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     Alert.alert('Gagal', 'Checkpoint ini gagal, tetapi habit progresmu masih aktif.');
   }
 
+  // Fungsi ini dipakai saat pengguna menandai checkpoint sebagai berhasil.
   async function confirmCheckpoint() {
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
@@ -393,6 +404,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     setHabit(nextHabit);
   }
 
+  // Fungsi ini dipakai saat pengguna menandai checkpoint sebagai gagal.
   async function rejectCheckpoint() {
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
@@ -486,6 +498,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
   const isInCooldown = lastEndTime > 0 && (now - lastEndTime) < PROGRESS_HABIT_COOLDOWN_MS;
   const timeUntilRestart = Math.max(0, lastEndTime + PROGRESS_HABIT_COOLDOWN_MS - now);
 
+  // Fungsi ini memulai siklus progress habit baru dan mengatur checkpoint pertama.
   async function startProgressHabit() {
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
@@ -523,6 +536,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     Alert.alert('Berhasil', 'Progress habit dimulai. Checkpoint pertama akan tersedia segera.');
   }
 
+  // Fungsi ini memulai ulang siklus habit setelah selesai atau gagal, agar pengguna bisa mencoba lagi.
   async function resetProgressHabit() {
     const nextCheckpointAt = Date.now() + getProgressCheckpointDelayMs();
     const reminderIds = await scheduleProgressHabitNotifications(

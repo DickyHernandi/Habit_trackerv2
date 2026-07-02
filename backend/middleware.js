@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
+// Middleware ini memeriksa apakah request membawa token JWT yang valid.
+// Jika token sah, informasi user akan ditambahkan ke request agar route berikutnya bisa mengakses identitas pengguna.
 export function verifyToken(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
 
@@ -20,6 +22,7 @@ export function verifyToken(req, res, next) {
   }
 }
 
+// Fungsi ini membuat token JWT yang dipakai untuk menjaga sesi login pengguna.
 export function generateToken(userId, username) {
   return jwt.sign({ userId, username }, process.env.JWT_SECRET, { expiresIn: '30d' });
 }

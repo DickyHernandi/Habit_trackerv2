@@ -30,6 +30,7 @@ const PROGRESS_REMINDER_UNIT_PLURAL_LABEL = USE_PROGRESS_HABIT_TEST_TIMING ? 'de
 const PROGRESS_REMINDER_WINDOW_MS = PROGRESS_REMINDER_AMOUNT * PROGRESS_REMINDER_UNIT_MS;
 const PROGRESS_NOTIFICATION_CHANNEL_ID = 'habit-progress-reminders';
 
+// Fungsi ini meminta izin notifikasi ke pengguna supaya reminder dan alert bisa ditampilkan.
 export async function requestNotificationPermission() {
   const currentPermissions = await Notifications.getPermissionsAsync();
 
@@ -43,6 +44,7 @@ export async function requestNotificationPermission() {
   return status === 'granted';
 }
 
+// Fungsi ini mengembalikan durasi awal sebelum checkpoint progress pertama tersedia.
 export function getProgressCheckpointDelayMs() {
   return PROGRESS_CHECKPOINT_DELAY_MS;
 }
@@ -89,6 +91,7 @@ async function ensureProgressNotificationChannel() {
   });
 }
 
+// Fungsi ini menampilkan notifikasi peringatan saat timer habit timed sedang berjalan dan aplikasi pindah ke latar belakang.
 export async function showTimedHabitBackgroundWarning(habitName: string) {
   const { granted } = await Notifications.getPermissionsAsync();
   if (!granted) {
@@ -104,6 +107,7 @@ export async function showTimedHabitBackgroundWarning(habitName: string) {
   });
 }
 
+// Fungsi ini menampilkan notifikasi ketika habit timed gagal karena pengguna meninggalkan aplikasi terlalu lama.
 export async function showTimedHabitFailedNotification(habitName: string) {
   const { granted } = await Notifications.getPermissionsAsync();
   if (!granted) {
@@ -127,6 +131,7 @@ function formatProgressTargetNotificationText(checkpointTarget: number, unit?: s
   return targetText;
 }
 
+// Fungsi ini menjadwalkan reminder dan deadline untuk checkpoint progress, agar pengguna mendapat pengingat sebelum waktunya habis.
 export async function scheduleProgressHabitNotifications(
   habitId: string,
   habitName: string,
@@ -248,6 +253,7 @@ export async function scheduleProgressHabitNotifications(
   return notificationIds;
 }
 
+// Fungsi ini membatalkan satu notifikasi yang sudah dijadwalkan sebelumnya.
 export async function cancelScheduledNotification(notificationId?: string | null) {
   if (!notificationId) {
     return;
@@ -256,6 +262,7 @@ export async function cancelScheduledNotification(notificationId?: string | null
   await Notifications.cancelScheduledNotificationAsync(notificationId);
 }
 
+// Fungsi ini membatalkan beberapa notifikasi sekaligus saat habit berubah status atau selesai.
 export async function cancelScheduledNotifications(notificationIds?: string[] | null) {
   if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
     return;
@@ -317,6 +324,7 @@ async function finalizeProgressHabitCompletion(habit: any, hasSuccess: boolean) 
   await saveHistory(habit.userId, habit.name, habit.type, finalEarnedPoints, 'completed');
 }
 
+// Fungsi ini memproses habit progress yang melewati deadline checkpoint dan menentukan apakah habit tersebut dianggap gagal atau dilanjutkan.
 export async function reconcileMissedProgressHabit(habit: any) {
   if (!habit || habit.type !== 'progress' || habit.completed || habit.failed) {
     return null;
@@ -422,6 +430,7 @@ export async function reconcileMissedProgressHabit(habit: any) {
   return nextHabit;
 }
 
+// Fungsi ini menjadwalkan ulang notifikasi progress habit yang masih pending untuk pengguna tertentu saat sesi dipulihkan.
 export async function reschedulePendingProgressHabitsForUser(userId: string) {
   if (!userId) {
     return;
@@ -471,6 +480,7 @@ export async function reschedulePendingProgressHabitsForUser(userId: string) {
   );
 }
 
+// Fungsi ini memeriksa semua habit progress milik pengguna dan mengeksekusi rekonsiliasi jika deadline sudah terlewati.
 export async function reconcileMissedProgressHabitsForUser(userId: string) {
   if (!userId) {
     return;

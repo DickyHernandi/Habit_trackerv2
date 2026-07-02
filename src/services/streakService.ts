@@ -3,10 +3,12 @@ import { getTodayDate, getYesterdayDate } from '../utils/dateUtils';
 import { unlockAchievement } from './achievementService';
 import { db } from './firebase';
 
+// Fungsi ini menghitung bonus poin tambahan berdasarkan panjang streak pengguna.
 export function getStreakBonus(streak: number) {
   return streak >= 5 ? 10 : streak;
 }
 
+// Fungsi ini memperbarui streak pengguna setiap kali habit selesai, lalu memberi achievement jika streak mencapai batas tertentu.
 export async function updateUserStreak(userId: string) {
   const userRef = doc(db, 'users', userId);
   const snapshot = await getDoc(userRef);

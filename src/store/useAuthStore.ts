@@ -17,6 +17,8 @@ interface AuthState {
   restoreSession: () => Promise<boolean>;
 }
 
+// Store auth menyimpan status login pengguna secara global.
+// Data ini juga disimpan ke AsyncStorage agar sesi tetap ada saat aplikasi dibuka kembali.
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   userId: null,
@@ -25,6 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: false,
   error: null,
 
+  // Fungsi ini menyimpan data login pengguna ke store dan ke AsyncStorage agar sesi tetap tersimpan.
   setAuth: (userId: string, username: string, token: string) => {
     set({ isAuthenticated: true, userId, username, token, error: null });
     AsyncStorage.setItem('authToken', token);
@@ -32,6 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     AsyncStorage.setItem('username', username);
   },
 
+  // Fungsi ini menghapus sesi login saat pengguna keluar dari aplikasi.
   clearAuth: () => {
     set({ isAuthenticated: false, userId: null, username: null, token: null });
     AsyncStorage.removeItem('authToken');
@@ -47,6 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error });
   },
 
+  // Fungsi ini mencoba memulihkan sesi login dari penyimpanan lokal saat aplikasi dibuka kembali.
   restoreSession: async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');

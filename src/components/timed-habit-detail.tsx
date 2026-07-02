@@ -10,6 +10,7 @@ type Props = {
   habit: any;
 };
 
+// Komponen ini mengatur alur timer untuk habit bertipe timed, mulai dari memulai timer, menunggu selesai, sampai memberi reward jika berhasil.
 export function TimedHabitDetail({ habit }: Props) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [running, setRunning] = useState(false);
@@ -25,6 +26,7 @@ export function TimedHabitDetail({ habit }: Props) {
     backgroundWarningShown.current = false;
   }, [habit?.id]);
 
+  // Fungsi ini memulai timer dan mengatur ulang state agar countdown bisa berjalan dari awal.
   async function startTimer() {
     if (!habit?.duration) return;
 
@@ -52,6 +54,7 @@ export function TimedHabitDetail({ habit }: Props) {
     return () => clearInterval(interval);
   }, [running, timeLeft]);
 
+  // Fungsi ini dipanggil ketika timer selesai, lalu memberi poin, streak, dan mencatat history completion.
   async function completeTimedHabit() {
     setRunning(false);
     await cancelScheduledNotification(timerNotificationId.current);
@@ -101,6 +104,7 @@ export function TimedHabitDetail({ habit }: Props) {
     return () => subscription.remove();
   }, [habit, running]);
 
+  // Fungsi ini dipanggil ketika pengguna keluar aplikasi terlalu lama dan timer dianggap gagal.
   async function failTimedHabit() {
     setRunning(false);
     setTimeLeft(0);

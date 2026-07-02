@@ -6,11 +6,13 @@ import { ProgressHabitDetail } from '../../components/progress-habit-detail';
 import { TimedHabitDetail } from '../../components/timed-habit-detail';
 import { db } from '../../services/firebase';
 
+// Layar ini mengambil data habit berdasarkan ID lalu menampilkan detail sesuai jenis habit.
 export default function HabitDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [habit, setHabit] = useState<any>(null);
 
+  // Saat layar dibuka, data habit diambil dari Firestore berdasarkan ID yang dikirim dari daftar habit.
   useEffect(() => {
     let isActive = true;
 
