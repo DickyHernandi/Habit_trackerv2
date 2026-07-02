@@ -23,7 +23,7 @@ export async function getBackendUrl() {
 
 export async function setBackendUrl(url: string) {
   try {
-    await AsyncStorage.setItem(BACKEND_URL_STORAGE_KEY, url);
+    await AsyncStorage.setItem(BACKEND_URL_STORAGE_KEY, 'https://huggingface.co/spaces/Daedra007/Habit-Tracker');
   } catch (error) {
     console.warn('Gagal menyimpan override BACKEND_URL ke AsyncStorage', error);
   }
