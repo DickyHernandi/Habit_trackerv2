@@ -98,7 +98,7 @@ export default function ProfileScreen() {
               setCurrentBackendUrl(await getBackendUrl());
             }}
           >
-            <Text style={styles.debugButtonText}>Pakai Fly.io</Text>
+            <Text style={styles.debugButtonText}>Pakai HuggingFace</Text>
           </Pressable>
 
           <Pressable
@@ -108,7 +108,7 @@ export default function ProfileScreen() {
               setCurrentBackendUrl(await getBackendUrl());
             }}
           >
-            <Text style={styles.debugButtonText}>Kembali default</Text>
+            <Text style={styles.debugButtonText}>Kembali ke Railway</Text>
           </Pressable>
         </View>
 
