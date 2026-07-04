@@ -6,7 +6,7 @@ const BACKEND_URL_STORAGE_KEY = 'BACKEND_URL_OVERRIDE';
 const DEFAULT_BACKEND_URL =
   (Constants.expoConfig?.extra as any)?.BACKEND_URL ||
   process.env.BACKEND_URL ||
-  'https://huggingface.co/spaces/Daedra007/Habit-Tracker';
+  'https://daedra007-habit-tracker.hf.space';
 
 export async function getBackendUrl() {
   try {

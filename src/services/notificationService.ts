@@ -120,7 +120,10 @@ export async function scheduleProgressHabitNotifications(
             type: 'progress-available'
           }
         },
-        trigger: new Date(resolvedCheckpointAvailableAt)
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(resolvedCheckpointAvailableAt)
+        }
       });
 
       console.log('[Frontend] scheduleProgressHabitNotifications scheduled', { notificationId });
