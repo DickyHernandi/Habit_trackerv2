@@ -1,4 +1,4 @@
-import Expo from 'expo-server-sdk';
+import { Expo } from 'expo-server-sdk';
 import admin, { db } from './firebaseConfig.js';
 
 const expo = new Expo();

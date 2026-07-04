@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import Expo from 'expo-server-sdk';
+import { Expo } from 'expo-server-sdk';
 import express from 'express';
 import admin, { db } from './firebaseConfig.js';
 import { generateToken, verifyToken } from './middleware.js';
