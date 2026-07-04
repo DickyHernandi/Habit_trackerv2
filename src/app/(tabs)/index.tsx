@@ -13,6 +13,8 @@ const TYPE_COLOR: Record<string, string> = {
 // Durasi cooldown untuk habit progress agar pengguna tidak bisa langsung mengulang habit yang sama setelah selesai atau gagal.
 const PROGRESS_HABIT_COOLDOWN_MS = 6 * 60 * 1000; // 6 menit untuk testing
 
+// Halaman home menampilkan daftar habit pengguna, ringkasan progres, dan menambahkan listener real-time dari Firestore.
+
 // Fungsi ini membantu mengubah nilai createdAt dari Firestore menjadi timestamp yang bisa dibandingkan secara konsisten.
 function getCreatedAtValue(createdAt: any) {
   if (!createdAt) return 0;
@@ -22,7 +24,7 @@ function getCreatedAtValue(createdAt: any) {
   return 0;
 }
 
-// Layar utama ini menampilkan daftar habit pengguna, ringkasan progres, dan tombol untuk menambah habit baru.
+// Halaman utama menampilkan daftar habit pengguna, ringkasan progres, dan menambahkan listener real-time dari Firestore.
 export default function HomeScreen() {
   const [habits, setHabits] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());

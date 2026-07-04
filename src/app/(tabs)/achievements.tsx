@@ -4,6 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
+// Halaman achievements menampilkan lencana dan status pencapaian pengguna secara real-time.
 type AchievementItem = {
   id: string;
   title: string;

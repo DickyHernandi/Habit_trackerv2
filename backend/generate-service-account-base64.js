@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+// Util backend untuk menghasilkan Base64 dari serviceAccountKey.json.
 const filePath = path.resolve(process.cwd(), 'serviceAccountKey.json');
 
 if (!fs.existsSync(filePath)) {

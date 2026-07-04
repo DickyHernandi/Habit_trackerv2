@@ -16,6 +16,8 @@ import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
+// Versi web dari tab navigasi aplikasi.
+
 export default function AppTabs() {
   return (
     <Tabs>

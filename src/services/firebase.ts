@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// File ini menginisialisasi SDK Firebase untuk aplikasi frontend.
-// Konfigurasi ini dipakai agar aplikasi bisa terhubung ke Firestore dan fitur lain dari Firebase.
+// Inisialisasi Firebase SDK untuk frontend.
+// File ini mengatur koneksi Firestore agar semua service frontend dapat mengakses database.
 const firebaseConfig = {
   apiKey: 'AIzaSyDBXGkzur5bfVDIQIhIMG0D45voTYNFROE',
   authDomain: 'habit-tracker-v2-9c3bf.firebaseapp.com',

@@ -7,6 +7,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
 
+// Komponen animasi ikon splash untuk transisi loading aplikasi.
+
 export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
 

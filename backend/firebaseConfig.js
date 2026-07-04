@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 const fileDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(fileDir, '.env') });
 
+// Konfigurasi Firebase Admin untuk backend. File ini mencoba membaca kredensial layanan
+// dari environment variable atau file lokal agar backend dapat terhubung ke Firestore.
+
 // File ini menghubungkan backend ke Firebase Admin SDK.
 // Kunci layanan diambil dari file lokal atau dari environment variable agar aplikasi bisa berjalan di lokal maupun deployment.
 if (process.env.SERVICE_ACCOUNT_BASE64) {

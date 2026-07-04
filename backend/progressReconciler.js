@@ -1,4 +1,10 @@
+import Expo from 'expo-server-sdk';
 import admin, { db } from './firebaseConfig.js';
+
+const expo = new Expo();
+
+// Backend ini bertanggung jawab mengirim notifikasi push ke Expo dan merekonsiliasi
+// habit progress yang terlewat agar status habit tetap konsisten.
 
 // Fungsi ini dipanggil setelah sistem memutuskan apakah habit progres dianggap berhasil atau gagal.
 // Jika berhasil, poin dan statistik pengguna akan ditambah; jika gagal, data akan dicatat ke history sebagai kegagalan.
@@ -43,43 +49,93 @@ async function getUserPushTokens(userId) {
 
   const userDoc = await db.collection('users').doc(userId).get();
   if (!userDoc.exists) {
+    console.warn('[Backend] getUserPushTokens: user not found', { userId });
     return [];
   }
 
   const userData = userDoc.data();
-  return Array.isArray(userData?.pushTokens) ? userData.pushTokens : [];
+  const pushTokens = Array.isArray(userData?.pushTokens) ? userData.pushTokens : [];
+  console.log('[Backend] getUserPushTokens', { userId, pushTokensCount: pushTokens.length });
+  return pushTokens;
+}
+
+// Hapus token Expo yang sudah tidak valid dari Firestore.
+// Ini mencegah backend menyimpan token lama dan mencoba mengirim notifikasi ke device yang sudah tidak terdaftar lagi.
+async function removeInvalidUserPushTokens(userId, invalidTokens) {
+  if (!userId || !Array.isArray(invalidTokens) || invalidTokens.length === 0) {
+    return;
+  }
+
+  console.log('[Backend] removeInvalidUserPushTokens: menghapus token invalid dari user', { userId, invalidTokens });
+  await db.collection('users').doc(userId).update({
+    pushTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens)
+  });
 }
 
 async function sendPushNotificationToUser(userId, title, body, data = {}) {
   const tokens = await getUserPushTokens(userId);
+  console.log('[Backend] sendPushNotificationToUser', { userId, title, body, tokenCount: tokens.length });
   if (!tokens.length) {
+    console.log('[Backend] sendPushNotificationToUser: no push tokens available', { userId });
     return;
   }
 
-  const messages = tokens.map((token) => ({
-    token,
-    notification: {
-      title,
-      body
-    },
-    data: {
-      ...data,
-      userId: String(userId)
+  const messages = tokens.reduce((acc, token) => {
+    if (!Expo.isExpoPushToken(token)) {
+      console.warn('[Backend] sendPushNotificationToUser: skipping invalid Expo token', token);
+      return acc;
     }
-  }));
 
-  try {
-    const response = await admin.messaging().sendAll(messages);
-    if (response.failureCount > 0) {
-      console.warn('Some push notifications failed to send', response.responses);
+    acc.push({
+      to: token,
+      sound: 'default',
+      title,
+      body,
+      data: {
+        ...data,
+        userId: String(userId)
+      }
+    });
+
+    return acc;
+  }, []);
+
+  if (messages.length === 0) {
+    return;
+  }
+
+  const chunks = expo.chunkPushNotifications(messages);
+  for (const chunk of chunks) {
+    try {
+      const tickets = await expo.sendPushNotificationsAsync(chunk);
+      console.log('[Backend] sendPushNotificationToUser: send chunk result', { tickets });
+
+      const invalidTokens = [];
+      tickets.forEach((ticket, index) => {
+        if (ticket.status === 'error') {
+          const token = chunk[index]?.to;
+          console.warn('[Backend] Expo push ticket error', ticket.details, token);
+
+          const errorCode = ticket.details?.error;
+          if (token && ['DeviceNotRegistered', 'InvalidCredentials', 'MessageTooBig', 'InvalidRegistration', 'Unregistered'].includes(errorCode)) {
+            invalidTokens.push(token);
+          }
+        }
+      });
+
+      if (invalidTokens.length > 0) {
+        console.log('[Backend] sendPushNotificationToUser: found invalid tokens, cleaning up', { userId, invalidTokens });
+        await removeInvalidUserPushTokens(userId, invalidTokens);
+      }
+    } catch (error) {
+      console.error('[Backend] Unable to send push notification via Expo', error);
     }
-  } catch (error) {
-    console.error('Unable to send push notification', error);
   }
 }
 
 export async function sendPendingProgressReminderNotifications() {
   const now = Date.now();
+  console.log('[Backend] sendPendingProgressReminderNotifications: checking habits at', now);
   const snapshot = await db.collection('habits')
     .where('type', '==', 'progress')
     .where('completed', '==', false)
@@ -91,8 +147,27 @@ export async function sendPendingProgressReminderNotifications() {
   const promises = [];
   snapshot.docs.forEach((docSnap) => {
     const habit = { id: docSnap.id, ...(docSnap.data() || {}) };
+    console.log('[Backend] sendPendingProgressReminderNotifications habit available', {
+      habitId: habit.id,
+      userId: habit.userId,
+      checkpointAvailableAt: habit.checkpointAvailableAt,
+      checkpointReminderDeadlineAt: habit.checkpointReminderDeadlineAt
+    });
     const lastSentAt = getNumber(habit.progressNotificationSentAt, 0);
+    console.log('[Backend] sendPendingProgressReminderNotifications habit', {
+      habitId: habit.id,
+      userId: habit.userId,
+      checkpointAvailableAt: habit.checkpointAvailableAt,
+      checkpointReminderDeadlineAt: habit.checkpointReminderDeadlineAt,
+      progressNotificationSentAt: lastSentAt
+    });
+
     if (lastSentAt >= getNumber(habit.checkpointAvailableAt, 0)) {
+      console.log('[Backend] sendPendingProgressReminderNotifications: already sent notification for habit', {
+        habitId: habit.id,
+        lastSentAt,
+        checkpointAvailableAt: habit.checkpointAvailableAt
+      });
       return;
     }
 
@@ -177,6 +252,7 @@ function hasPassedCheckpointInCurrentCycle(habit) {
 // Saat ditemukan, sistem akan meng-update status habit, menandai checkpoint yang terlewat, dan mencatat hasil akhir ke database.
 export async function reconcileMissedProgressHabits({ userId } = {}) {
   const now = Date.now();
+  console.log('[Backend] reconcileMissedProgressHabits: start', { userId, now });
   let query = db.collection('habits')
     .where('type', '==', 'progress')
     .where('completed', '==', false)
@@ -189,9 +265,11 @@ export async function reconcileMissedProgressHabits({ userId } = {}) {
 
   const snapshot = await query.get();
   if (snapshot.empty) {
+    console.log('[Backend] reconcileMissedProgressHabits: tidak ada habit terlewat');
     return [];
   }
 
+  console.log('[Backend] reconcileMissedProgressHabits: habits found', snapshot.size);
   const updates = [];
 
   for (const document of snapshot.docs) {

@@ -1,10 +1,12 @@
 import React, { type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
+
+// Komponen bantuan kecil untuk menampilkan instruksi atau petunjuk di UI.
 
 type HintRowProps = {
   title?: string;

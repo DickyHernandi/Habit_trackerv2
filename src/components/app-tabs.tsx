@@ -5,6 +5,8 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
+// Tab navigasi utama untuk versi native aplikasi.
+// Menyediakan akses cepat ke halaman Beranda, Achievement, Leaderboard, Riwayat, dan Profil.
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];

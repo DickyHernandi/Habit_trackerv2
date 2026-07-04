@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { db } from '../services/firebase';
 import { addUserPoints } from '../services/gamificationService';
 import { saveHistory } from '../services/historyService';
-import { getProgressCheckpointDelayMs, getProgressNextCheckpointDelayMs, getProgressReminderWindowMs } from '../services/notificationService';
+import { cancelScheduledNotifications, getProgressCheckpointDelayMs, getProgressNextCheckpointDelayMs, getProgressReminderWindowMs, scheduleProgressHabitNotifications } from '../services/notificationService';
 import { getStreakBonus, updateUserStreak } from '../services/streakService';
 import { getCurrentUserId } from '../services/userService';
 
@@ -239,6 +239,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
   // Fungsi ini dipanggil ketika checkpoint melewati batas waktu dan dianggap gagal otomatis.
   async function failCurrentProgressCheckpoint() {
     const latestHabit = habitRef.current;
+    console.log('[Frontend] failCurrentProgressCheckpoint', { latestHabit });
 
     if (!latestHabit || latestHabit.completed || latestHabit.failed) {
       return;
@@ -255,6 +256,11 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const hasSuccess = hasPassedCheckpointInCurrentCycle({ ...latestHabit, checkpointResults });
 
     if (isFinalStage) {
+      console.log('[Frontend] failCurrentProgressCheckpoint: final stage', { newAttempted, checkpointResults, hasSuccess });
+      if (Array.isArray(latestHabit.notificationIds) && latestHabit.notificationIds.length > 0) {
+        await cancelScheduledNotifications(latestHabit.notificationIds);
+      }
+
       const nextHabit = {
         ...latestHabit,
         attemptedCheckpoints: newAttempted,
@@ -289,17 +295,30 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     }
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
+    console.log('[Frontend] failCurrentProgressCheckpoint: jadwalkan checkpoint selanjutnya', { nextCheckpointAt });
+
+    if (Array.isArray(latestHabit.notificationIds) && latestHabit.notificationIds.length > 0) {
+      await cancelScheduledNotifications(latestHabit.notificationIds);
+    }
+
+    const notificationIds = await scheduleProgressHabitNotifications(
+      latestHabit.id,
+      nextCheckpointAt,
+      'missed',
+      true
+    );
 
     const nextHabit = {
       ...latestHabit,
       attemptedCheckpoints: newAttempted,
-      checkpointStatus: 'pending',
+      checkpointStatus: 'missed',
       completed: false,
       failed: false,
       checkpointIds: latestHabit.checkpointIds,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
-      checkpointResults
+      checkpointResults,
+      notificationIds
     };
 
     await persistProgressHabitState(latestHabit.id, nextHabit);
@@ -310,6 +329,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
   // Fungsi ini dipakai saat pengguna menandai checkpoint sebagai berhasil.
   async function confirmCheckpoint() {
+    console.log('[Frontend] confirmCheckpoint', { normalizedHabit });
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
     }
@@ -328,6 +348,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
     const checkpointResults = applyCheckpointOutcome(normalizedHabit, 'passed');
 
     if (isFinalStage) {
+      console.log('[Frontend] confirmCheckpoint: selesai pada checkpoint terakhir', { nextCompletedCheckpoint });
       const checkpointPoints = nextCompletedCheckpoint * 10;
       const nextStreak = await updateUserStreak(getCurrentUserId());
       const streakBonus = getStreakBonus(nextStreak);
@@ -363,6 +384,17 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
 
+    if (Array.isArray(normalizedHabit.notificationIds) && normalizedHabit.notificationIds.length > 0) {
+      await cancelScheduledNotifications(normalizedHabit.notificationIds);
+    }
+
+    const notificationIds = await scheduleProgressHabitNotifications(
+      normalizedHabit.id,
+      nextCheckpointAt,
+      'pending',
+      false
+    );
+
     const nextHabit = {
       ...normalizedHabit,
       completedCheckpoint: nextCompletedCheckpoint,
@@ -372,7 +404,8 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       checkpointStatus: 'pending',
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
-      checkpointResults
+      checkpointResults,
+      notificationIds
     };
 
     await persistProgressHabitState(normalizedHabit.id, nextHabit);
@@ -381,6 +414,7 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
   // Fungsi ini dipakai saat pengguna menandai checkpoint sebagai gagal.
   async function rejectCheckpoint() {
+    console.log('[Frontend] rejectCheckpoint', { normalizedHabit });
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
     }
@@ -427,6 +461,17 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
     const nextCheckpointAt = Date.now() + getProgressNextCheckpointDelayMs();
 
+    if (Array.isArray(normalizedHabit.notificationIds) && normalizedHabit.notificationIds.length > 0) {
+      await cancelScheduledNotifications(normalizedHabit.notificationIds);
+    }
+
+    const notificationIds = await scheduleProgressHabitNotifications(
+      normalizedHabit.id,
+      nextCheckpointAt,
+      'pending',
+      false
+    );
+
     const nextHabit = {
       ...normalizedHabit,
       attemptedCheckpoints: newAttempted,
@@ -435,7 +480,8 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       failed: false,
       checkpointAvailableAt: nextCheckpointAt,
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
-      checkpointResults
+      checkpointResults,
+      notificationIds
     };
 
     await persistProgressHabitState(normalizedHabit.id, nextHabit);
@@ -462,11 +508,24 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
   // Fungsi ini memulai siklus progress habit baru dan mengatur checkpoint pertama.
   async function startProgressHabit() {
+    console.log('[Frontend] startProgressHabit', { normalizedHabit });
     if (!normalizedHabit || normalizedHabit.completed || normalizedHabit.failed) {
       return;
     }
 
     const nextCheckpointAt = Date.now() + getProgressCheckpointDelayMs();
+    console.log('[Frontend] startProgressHabit: checkpoint awal', { nextCheckpointAt });
+
+    if (Array.isArray(normalizedHabit.notificationIds) && normalizedHabit.notificationIds.length > 0) {
+      await cancelScheduledNotifications(normalizedHabit.notificationIds);
+    }
+
+    const notificationIds = await scheduleProgressHabitNotifications(
+      normalizedHabit.id,
+      nextCheckpointAt,
+      'pending',
+      false
+    );
 
     const nextHabit = {
       ...normalizedHabit,
@@ -479,7 +538,8 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       checkpointReminderDeadlineAt: nextCheckpointAt + getProgressReminderWindowMs(),
       completedAt: null,
       failedAt: null,
-      checkpointResults: Array.from({ length: TOTAL_PROGRESS_CHECKPOINTS }, () => 'pending')
+      checkpointResults: Array.from({ length: TOTAL_PROGRESS_CHECKPOINTS }, () => 'pending'),
+      notificationIds
     };
 
     await persistProgressHabitState(normalizedHabit.id, nextHabit);
@@ -489,7 +549,9 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
 
   // Fungsi ini memulai ulang siklus habit setelah selesai atau gagal, agar pengguna bisa mencoba lagi.
   async function resetProgressHabit() {
+    console.log('[Frontend] resetProgressHabit', { normalizedHabit });
     const nextCheckpointAt = Date.now() + getProgressCheckpointDelayMs();
+    console.log('[Frontend] resetProgressHabit: checkpoint awal baru', { nextCheckpointAt });
 
     const resetHabit = {
       ...normalizedHabit,
@@ -505,6 +567,14 @@ export function ProgressHabitDetail({ habit, setHabit }: Props) {
       checkpointResults: Array.from({ length: TOTAL_PROGRESS_CHECKPOINTS }, () => 'pending')
     };
 
+    const notificationIds = await scheduleProgressHabitNotifications(
+      normalizedHabit.id,
+      nextCheckpointAt,
+      'pending',
+      false
+    );
+
+    resetHabit.notificationIds = notificationIds;
     await persistProgressHabitState(normalizedHabit.id, resetHabit);
     setHabit(resetHabit);
     Alert.alert('Berhasil', 'Progress Habit telah direset. Checkpoint baru akan muncul segera.');

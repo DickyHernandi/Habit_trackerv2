@@ -14,13 +14,17 @@ type Props = {
 export function TimedHabitDetail({ habit }: Props) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [running, setRunning] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
   const backgroundTime = useRef<number | null>(null);
   const timerNotificationId = useRef<string | null>(null);
   const backgroundWarningShown = useRef(false);
 
+  console.log('[TimedHabitDetail] render', { habitId: habit?.id, running, timeLeft, timerStarted });
+
   useEffect(() => {
     setTimeLeft(0);
     setRunning(false);
+    setTimerStarted(false);
     backgroundTime.current = null;
     timerNotificationId.current = null;
     backgroundWarningShown.current = false;
@@ -28,6 +32,7 @@ export function TimedHabitDetail({ habit }: Props) {
 
   // Fungsi ini memulai timer dan mengatur ulang state agar countdown bisa berjalan dari awal.
   async function startTimer() {
+    console.log('[TimedHabitDetail] startTimer called', { habitId: habit?.id, duration: habit?.duration });
     if (!habit?.duration) return;
 
     await cancelScheduledNotification(timerNotificationId.current);
@@ -35,6 +40,7 @@ export function TimedHabitDetail({ habit }: Props) {
     backgroundWarningShown.current = false;
     backgroundTime.current = null;
     setTimeLeft(habit.duration * 60);
+    setTimerStarted(true);
     setRunning(true);
   }
 
@@ -56,7 +62,9 @@ export function TimedHabitDetail({ habit }: Props) {
 
   // Fungsi ini dipanggil ketika timer selesai, lalu memberi poin, streak, dan mencatat history completion.
   async function completeTimedHabit() {
+    console.log('[TimedHabitDetail] completeTimedHabit', { habitId: habit?.id, timeLeft });
     setRunning(false);
+    setTimerStarted(false);
     await cancelScheduledNotification(timerNotificationId.current);
     timerNotificationId.current = null;
     backgroundWarningShown.current = false;
@@ -106,7 +114,9 @@ export function TimedHabitDetail({ habit }: Props) {
 
   // Fungsi ini dipanggil ketika pengguna keluar aplikasi terlalu lama dan timer dianggap gagal.
   async function failTimedHabit() {
+    console.log('[TimedHabitDetail] failTimedHabit', { habitId: habit?.id, timeLeft });
     setRunning(false);
+    setTimerStarted(false);
     setTimeLeft(0);
     await cancelScheduledNotification(timerNotificationId.current);
     timerNotificationId.current = null;
@@ -132,6 +142,14 @@ export function TimedHabitDetail({ habit }: Props) {
           <Text style={styles.timer}>
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </Text>
+          <View style={styles.progressBarContainer}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${Math.min(100, Math.max(0, ((habit.duration * 60 - timeLeft) / (habit.duration * 60 || 1)) * 100))}%` }
+              ]}
+            />
+          </View>
           <Text style={styles.durationText}>Target: {habit.duration} menit</Text>
         </View>
 
@@ -240,6 +258,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: '700'
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#E0F2FE',
+    overflow: 'hidden',
+    marginTop: 18
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#2563EB'
   },
   runningCard: {
     backgroundColor: '#EFF6FF',

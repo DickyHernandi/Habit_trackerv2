@@ -23,6 +23,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
   const { setAuth } = useAuthStore();
 
   async function handleLogin() {
+    console.log('[LoginScreen] handleLogin called', { username });
     if (!username.trim() || !password.trim()) {
       Alert.alert('Kesalahan', 'Silakan masukkan username dan password');
       return;
@@ -31,15 +32,18 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
     setLoading(true);
     try {
       const result = await loginUser(username, password);
+      console.log('[LoginScreen] loginUser result', result);
       
       if (result.success) {
         // Verify token immediately
         const validation = await validateToken(result.token);
+        console.log('[LoginScreen] validateToken result', validation);
         if (validation.success) {
           setAuth(result.userId, result.username, result.token);
         }
       }
     } catch (error: any) {
+      console.error('[LoginScreen] login failed', error);
       Alert.alert('Gagal Masuk', error.message);
     } finally {
       setLoading(false);

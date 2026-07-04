@@ -4,6 +4,8 @@ import { type ComponentProps } from 'react';
 
 type Props = Omit<ComponentProps<typeof Link>, 'href'> & { href: Href & string };
 
+// Komponen link eksternal membuka URL di peramban internal pada native,
+// atau tetap menggunakan target blank di versi web.
 export function ExternalLink({ href, ...rest }: Props) {
   return (
     <Link
@@ -11,6 +13,7 @@ export function ExternalLink({ href, ...rest }: Props) {
       {...rest}
       href={href}
       onPress={async (event) => {
+        console.debug('[ExternalLink] opening link', { href });
         if (process.env.EXPO_OS !== 'web') {
           // Prevent the default behavior of linking to the default browser on native.
           event.preventDefault();

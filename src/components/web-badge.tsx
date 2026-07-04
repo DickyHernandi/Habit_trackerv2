@@ -1,13 +1,14 @@
-import { version } from 'expo/package.json';
 import { Image } from 'expo-image';
+import { version } from 'expo/package.json';
 import React from 'react';
-import { useColorScheme, StyleSheet } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
 
+// Badge kecil yang menampilkan versi Expo dan logo, khusus untuk tampilan web.
 export function WebBadge() {
   const scheme = useColorScheme();
 

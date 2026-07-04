@@ -18,9 +18,17 @@ export default function HabitDetail() {
 
     async function loadHabit() {
       const habitId = Array.isArray(id) ? id[0] : String(id);
+      console.log('[HabitDetail] loading habit', { habitId });
       const snapshot = await getDoc(doc(db, 'habits', habitId));
 
-      if (!isActive || !snapshot.exists()) {
+      if (!isActive) {
+        console.log('[HabitDetail] component unmounted before habit loaded');
+        return;
+      }
+
+      if (!snapshot.exists()) {
+        console.warn('[HabitDetail] habit not found', { habitId });
+        setHabit(null);
         return;
       }
 

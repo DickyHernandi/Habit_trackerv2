@@ -5,6 +5,8 @@ import { addUserPoints } from './gamificationService';
 import { saveHistory } from './historyService';
 import { getStreakBonus, updateUserStreak } from './streakService';
 
+// Service notifikasi ini mengatur notifikasi lokal untuk habit timed dan progress,
+// serta menangani reschedule dan reconcile habit progress yang terlewat.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -76,7 +78,7 @@ export async function showTimedHabitFailedNotification(habitName: string) {
   });
 }
 
-// Fungsi ini menyimpan status checkpoint progress ke Firestore tanpa menjadwalkan notifikasi lokal.
+// Fungsi ini menjadwalkan notifikasi lokal untuk checkpoint progress habit dan menyimpan ID notifikasi ke Firestore.
 export async function scheduleProgressHabitNotifications(
   habitId: string,
   checkpointAvailableAt: number,
@@ -88,15 +90,57 @@ export async function scheduleProgressHabitNotifications(
     ? checkpointAvailableAt
     : fallbackCheckpointAvailableAt;
 
+  console.log('[Frontend] scheduleProgressHabitNotifications', {
+    habitId,
+    checkpointAvailableAt,
+    resolvedCheckpointAvailableAt,
+    checkpointStatus,
+    isNextCheckpoint
+  });
+
+  const notificationIds: string[] = [];
+  const { granted } = await Notifications.getPermissionsAsync();
+  console.log('[Frontend] scheduleProgressHabitNotifications permission granted=', granted);
+
+  if (granted) {
+    try {
+      const title = checkpointStatus === 'missed'
+        ? 'Checkpoint berikutnya dijadwalkan'
+        : 'Checkpoint tersedia';
+      const body = checkpointStatus === 'missed'
+        ? 'Checkpoint untuk habitmu terlewat. Checkpoint berikutnya akan tersedia segera.'
+        : 'Checkpoint untuk habitmu sudah tersedia. Buka aplikasi untuk mengonfirmasi.';
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: {
+            habitId,
+            type: 'progress-available'
+          }
+        },
+        trigger: new Date(resolvedCheckpointAvailableAt)
+      });
+
+      console.log('[Frontend] scheduleProgressHabitNotifications scheduled', { notificationId });
+      if (notificationId) {
+        notificationIds.push(notificationId);
+      }
+    } catch (error) {
+      console.error('[Frontend] scheduleProgressHabitNotifications gagal menjadwalkan notifikasi', error);
+    }
+  }
+
   await updateDoc(doc(db, 'habits', habitId), {
     checkpointAvailableAt: resolvedCheckpointAvailableAt,
     checkpointReminderDeadlineAt: resolvedCheckpointAvailableAt + PROGRESS_REMINDER_WINDOW_MS,
     checkpointStatus,
     failed: false,
-    notificationIds: []
+    notificationIds
   });
 
-  return [];
+  return notificationIds;
 }
 
 // Fungsi ini membatalkan satu notifikasi yang sudah dijadwalkan sebelumnya.
@@ -114,6 +158,7 @@ export async function cancelScheduledNotifications(notificationIds?: string[] | 
     return;
   }
 
+  console.log('[Frontend] cancelScheduledNotifications', { notificationIds });
   await Promise.all(
     notificationIds.map((notificationId) =>
       notificationId
@@ -278,6 +323,7 @@ export async function reschedulePendingProgressHabitsForUser(userId: string) {
     return;
   }
 
+  console.log('[Frontend] reschedulePendingProgressHabitsForUser: memeriksa habit progress pending', { userId });
   const habitsSnapshot = await getDocs(
     query(
       collection(db, 'habits'),
@@ -324,6 +370,7 @@ export async function reconcileMissedProgressHabitsForUser(userId: string) {
     return;
   }
 
+  console.log('[Frontend] reconcileMissedProgressHabitsForUser: memeriksa habit progress yang sudah melewati deadline', { userId });
   const habitsSnapshot = await getDocs(
     query(
       collection(db, 'habits'),

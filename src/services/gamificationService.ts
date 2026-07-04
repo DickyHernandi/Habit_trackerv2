@@ -1,18 +1,18 @@
 import {
-  doc,
-  getDoc,
-  increment,
-  updateDoc
+    doc,
+    getDoc,
+    increment,
+    updateDoc
 } from 'firebase/firestore';
 
 import { unlockAchievement } from './achievementService';
 import { db } from './firebase';
 
 import {
-  calculateLevel
+    calculateLevel
 } from '../utils/levelUtils';
 
-// Fungsi ini menambah poin pengguna saat habit selesai, lalu menghitung level dan membuka achievement yang sesuai.
+// Service gamifikasi menambah poin, menghitung level, dan membuka achievement otomatis sesuai aktivitas pengguna.
 export async function addUserPoints(
   userId: string,
   earnedPoints: number,
@@ -27,6 +27,8 @@ export async function addUserPoints(
   const currentPoints = userData.points || 0;
   const newPoints = currentPoints + earnedPoints;
   const newLevel = calculateLevel(newPoints);
+
+  console.log('[GamificationService] addUserPoints', { userId, earnedPoints, currentPoints, newPoints, newLevel });
 
   // Track completion counts
   const updateData: any = {

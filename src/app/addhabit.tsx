@@ -19,6 +19,7 @@ export default function AddHabitScreen() {
 
   // Fungsi ini mengumpulkan input pengguna, menyimpan habit ke Firestore, lalu memberi feedback hasil penyimpanan.
   async function saveHabit() {
+    console.log('[AddHabitScreen] saveHabit called', { name, type, duration, target, unit });
     if (!name.trim()) {
       Alert.alert('Kesalahan', 'Silakan masukkan nama habit');
       return;
@@ -42,6 +43,7 @@ export default function AddHabitScreen() {
     try {
       const createdAtMs = Date.now();
       const userId = getCurrentUserId();
+      console.log('[AddHabitScreen] saving habit for user', { userId, name, type });
       const checkpointTarget = type === 'progress' ? Number(target) / TOTAL_PROGRESS_CHECKPOINTS : null;
 
       await addDoc(collection(db, 'habits'), {
@@ -71,7 +73,7 @@ export default function AddHabitScreen() {
       Alert.alert('Berhasil', 'Habit berhasil dibuat');
       router.back();
     } catch (error) {
-      console.log(error);
+      console.error('[AddHabitScreen] saveHabit failed', error);
       Alert.alert('Kesalahan', 'Gagal menyimpan habit. Silakan coba lagi.');
     }
   }

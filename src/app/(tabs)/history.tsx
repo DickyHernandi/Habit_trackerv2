@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, StyleSheet, Text, View } from 'react-native';
 
+// Halaman riwayat menampilkan catatan habit yang telah diselesaikan atau gagal.
 export default function HistoryScreen() {
   const [history, setHistory] = useState<any[]>([]);
   const userId = useAuthStore(state => state.userId);

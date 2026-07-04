@@ -24,6 +24,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
   const { setAuth } = useAuthStore();
 
   async function handleRegister() {
+    console.log('[RegisterScreen] handleRegister called', { username });
     if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Kesalahan', 'Silakan lengkapi semua bidang');
       return;
@@ -42,16 +43,19 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     setLoading(true);
     try {
       const result = await registerUser(username, password);
+      console.log('[RegisterScreen] registerUser result', result);
       
       if (result.success) {
         // Verify token immediately
         const validation = await validateToken(result.token);
+        console.log('[RegisterScreen] validateToken result', validation);
         if (validation.success) {
           setAuth(result.userId, result.username, result.token);
           Alert.alert('Berhasil', `Selamat datang, ${result.username}!`);
         }
       }
     } catch (error: any) {
+      console.error('[RegisterScreen] register failed', error);
       Alert.alert('Gagal Daftar', error.message);
     } finally {
       setLoading(false);

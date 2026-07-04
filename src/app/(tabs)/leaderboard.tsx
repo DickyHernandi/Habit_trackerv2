@@ -3,6 +3,7 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
+// Halaman leaderboard menampilkan peringkat pengguna berdasarkan poin dan statistik mereka.
 export default function LeaderboardScreen() {
   const [users, setUsers] = useState<any[]>([]);
 
@@ -13,11 +14,19 @@ export default function LeaderboardScreen() {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('[LeaderboardScreen] loaded users', { count: data.length });
       setUsers(data);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('[LeaderboardScreen] unsubscribing from leaderboard listener');
+      unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    console.log('[LeaderboardScreen] users state updated', { length: users.length });
+  }, [users]);
 
   return (
     <View style={styles.page}>

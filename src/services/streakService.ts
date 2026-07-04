@@ -14,6 +14,7 @@ export async function updateUserStreak(userId: string) {
   const snapshot = await getDoc(userRef);
 
   if (!snapshot.exists()) {
+    console.warn('[StreakService] updateUserStreak: user not found', { userId });
     return 0;
   }
 
@@ -22,7 +23,10 @@ export async function updateUserStreak(userId: string) {
   const lastCompletedDate = userData.lastCompletedDate;
   const currentStreak = userData.streak || 0;
 
+  console.log('[StreakService] updateUserStreak', { userId, currentStreak, lastCompletedDate, today });
+
   if (lastCompletedDate === today) {
+    console.log('[StreakService] updateUserStreak: streak already diperbarui hari ini', { userId, currentStreak });
     return currentStreak;
   }
 
@@ -32,6 +36,8 @@ export async function updateUserStreak(userId: string) {
       streak: nextStreak,
       lastCompletedDate: today
     });
+
+    console.log('[StreakService] updateUserStreak: streak meningkat', { userId, nextStreak });
 
     if (nextStreak === 3 && !userData.achievements?.includes('Consistency Kickoff')) {
       await unlockAchievement(userId, 'Consistency Kickoff');
@@ -52,5 +58,6 @@ export async function updateUserStreak(userId: string) {
     lastCompletedDate: today
   });
 
+  console.log('[StreakService] updateUserStreak: streak di-reset karena jeda lebih dari satu hari', { userId });
   return 1;
 }

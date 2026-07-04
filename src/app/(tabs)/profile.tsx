@@ -2,14 +2,23 @@ import { clearBackendUrl, getBackendUrl, setBackendUrl } from '@/services/backen
 import { Link } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { db } from '../../services/firebase';
 import { useAuthStore } from '../../store/useAuthStore';
 
+// Halaman profil menampilkan informasi pengguna, statistik habit, dan opsi debug backend.
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [currentBackendUrl, setCurrentBackendUrl] = useState<string | null>(null);
   const { clearAuth, userId } = useAuthStore();
+  const showBackendDebugButtons = __DEV__;
+
+  const getBackendLabel = (url: string | null) => {
+    if (!url) return 'Memuat...';
+    if (url.includes('railway')) return 'Railway';
+    if (url.includes('huggingface') || url.includes('hf.space')) return 'HuggingFace';
+    return 'Custom';
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -27,11 +36,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     async function loadBackendUrl() {
       const url = await getBackendUrl();
+      console.log('[ProfileScreen] current backend url loaded', { userId, url });
       setCurrentBackendUrl(url);
     }
 
-    loadBackendUrl();
-  }, []);
+    void loadBackendUrl();
+  }, [userId]);
 
   function handleLogout() {
     Alert.alert('Logout', 'Apakah kamu yakin ingin logout?', [
@@ -55,7 +65,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.page}>
+    <ScrollView style={styles.page} contentContainerStyle={styles.scrollContent}>
       <View style={styles.profileCard}>
         <View style={styles.avatarPlaceholder}>
           <Text style={styles.avatarInitial}>{user.username?.[0] ?? 'U'}</Text>
@@ -88,28 +98,34 @@ export default function ProfileScreen() {
 
         <View style={styles.backendDebugSection}>
           <Text style={styles.sectionTitle}>Debug Backend</Text>
+          <Text style={styles.debugText}>Server aktif:</Text>
+          <Text style={styles.backendStatusText}>{getBackendLabel(currentBackendUrl)}</Text>
           <Text style={styles.debugText}>URL saat ini:</Text>
           <Text style={styles.backendUrlText}>{currentBackendUrl ?? 'Memuat...'}</Text>
 
-          <Pressable
-            style={styles.debugButton}
-            onPress={async () => {
-              await setBackendUrl('https://habittrackerv2-production.up.fly.dev');
-              setCurrentBackendUrl(await getBackendUrl());
-            }}
-          >
-            <Text style={styles.debugButtonText}>Pakai HuggingFace</Text>
-          </Pressable>
+          {showBackendDebugButtons && (
+            <>
+              <Pressable
+                style={styles.debugButton}
+                onPress={async () => {
+                  await setBackendUrl('https://habittrackerv2-production.up.railway.app');
+                  setCurrentBackendUrl(await getBackendUrl());
+                }}
+              >
+                <Text style={styles.debugButtonText}>Pakai Railway</Text>
+              </Pressable>
 
-          <Pressable
-            style={[styles.debugButton, styles.clearButton]}
-            onPress={async () => {
-              await clearBackendUrl();
-              setCurrentBackendUrl(await getBackendUrl());
-            }}
-          >
-            <Text style={styles.debugButtonText}>Kembali ke Railway</Text>
-          </Pressable>
+              <Pressable
+                style={[styles.debugButton, styles.clearButton]}
+                onPress={async () => {
+                  await clearBackendUrl();
+                  setCurrentBackendUrl(await getBackendUrl());
+                }}
+              >
+                <Text style={styles.debugButtonText}>Kembali ke HuggingFace</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         <View style={styles.achievementsSection}>
@@ -131,15 +147,18 @@ export default function ProfileScreen() {
           <Text style={styles.logoutButtonText}>Keluar</Text>
         </Pressable>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#F4F7FB',
-    padding: 24
+    backgroundColor: '#F4F7FB'
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40
   },
   center: {
     flex: 1,
@@ -274,6 +293,12 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 13,
     marginBottom: 6
+  },
+  backendStatusText: {
+    color: '#0F172A',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 8
   },
   backendUrlText: {
     color: '#0F172A',

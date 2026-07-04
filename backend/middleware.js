@@ -9,6 +9,7 @@ export function verifyToken(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
+    console.warn('[Backend] verifyToken: no token provided');
     return res.status(401).json({ error: 'No token provided' });
   }
 
@@ -18,6 +19,7 @@ export function verifyToken(req, res, next) {
     req.username = decoded.username;
     next();
   } catch (error) {
+    console.warn('[Backend] verifyToken: invalid token', error.message);
     return res.status(401).json({ error: 'Invalid token' });
   }
 }

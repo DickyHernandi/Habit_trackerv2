@@ -9,6 +9,7 @@ export async function saveHistory(
   points: number,
   status: 'completed' | 'failed' = 'completed'
 ) {
+  console.log('[HistoryService] saveHistory', { userId, habitName, habitType, points, status });
   await addDoc(collection(db, 'history'), {
     userId,
     habitName,

@@ -20,6 +20,9 @@ app.use(express.json());
 // Route autentikasi dipisahkan ke file tersendiri agar kode lebih terstruktur.
 app.use('/auth', authRoutes);
 
+// Entry point backend utama. File ini juga menyiapkan scheduler yang menjalankan
+// proses rekonsiliasi habit progress secara berkala.
+
 // Endpoint /health dipakai untuk mengecek apakah server backend sedang aktif dan siap menerima request.
 app.get('/health', (req, res) => {
   res.json({ status: 'Backend is running' });
@@ -49,12 +52,14 @@ app.get('/debug/firestore', async (req, res) => {
 // Endpoint ini dipakai secara manual untuk menjalankan proses rekonsiliasi habit progres yang terlewat.
 app.get('/reconcile-missed-progress', async (req, res) => {
   const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
+  console.log('[Backend] /reconcile-missed-progress called', { userId });
 
   try {
     const reconciled = await reconcileMissedProgressHabits({ userId });
+    console.log('[Backend] /reconcile-missed-progress result', { reconciledCount: reconciled.length });
     res.json({ success: true, reconciled: reconciled.length, details: reconciled });
   } catch (error) {
-    console.error('Failed to reconcile missed progress habits:', error);
+    console.error('[Backend] Failed to reconcile missed progress habits:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -62,16 +67,18 @@ app.get('/reconcile-missed-progress', async (req, res) => {
 // Fungsi ini menjalankan scheduler berkala untuk memeriksa habit progres yang tidak terselesaikan secara otomatis.
 function startMissedProgressScheduler() {
   const intervalMs = Number(process.env.PROGRESS_RECONCILER_INTERVAL_MS) || 30_000;
+  console.log('[Backend] startMissedProgressScheduler intervalMs=', intervalMs);
 
   setInterval(async () => {
+    console.log('[Backend] missed progress scheduler tick');
     try {
       await sendPendingProgressReminderNotifications();
       const reconciled = await reconcileMissedProgressHabits();
       if (reconciled.length > 0) {
-        console.log(`Reconciled ${reconciled.length} missed progress habit(s)`);
+        console.log(`[Backend] Reconciled ${reconciled.length} missed progress habit(s)`);
       }
     } catch (error) {
-      console.error('Progress reconciliation failed:', error);
+      console.error('[Backend] Progress reconciliation failed:', error);
     }
   }, intervalMs);
 }
