@@ -19,6 +19,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.shell.HabitTracker",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.SCHEDULE_EXACT_ALARM"
