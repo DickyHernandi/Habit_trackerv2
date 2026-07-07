@@ -53,7 +53,7 @@ export default function HabitDetail() {
   return (
     <View style={styles.page}>
       <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Kembali</Text>
+        <Text style={styles.backText}>Kembali</Text>
       </Pressable>
 
       {habit.type === 'timed' ? (
