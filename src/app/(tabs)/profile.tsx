@@ -6,12 +6,14 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { db } from '../../services/firebase';
 import { useAuthStore } from '../../store/useAuthStore';
 
-// Halaman profil menampilkan informasi pengguna, statistik habit, dan opsi debug backend.
+// Halaman profil menampilkan data pengguna, statistik kebiasaan, dan informasi tambahan untuk pengembangan.
 export default function ProfileScreen() {
+  // State untuk menyimpan data pengguna yang sedang login.
   const [user, setUser] = useState<any>(null);
+  // State untuk menyimpan URL backend yang sedang digunakan.
   const [currentBackendUrl, setCurrentBackendUrl] = useState<string | null>(null);
   const { clearAuth, userId } = useAuthStore();
-  const showBackendDebugButtons = __DEV__;
+  const showBackendDebugSection = __DEV__;
 
   const getBackendLabel = (url: string | null) => {
     if (!url) return 'Memuat...';
@@ -20,6 +22,7 @@ export default function ProfileScreen() {
     return 'Custom';
   };
 
+  // Mengambil data pengguna dari Firestore saat userId tersedia.
   useEffect(() => {
     if (!userId) {
       setUser(null);
@@ -33,16 +36,17 @@ export default function ProfileScreen() {
     return () => unsub();
   }, [userId]);
 
+  // Memuat URL backend saat halaman dibuka agar debug tetap bisa terlihat di mode development.
   useEffect(() => {
     async function loadBackendUrl() {
       const url = await getBackendUrl();
-      console.log('[ProfileScreen] current backend url loaded', { userId, url });
       setCurrentBackendUrl(url);
     }
 
     void loadBackendUrl();
   }, [userId]);
 
+  // Menangani proses logout dengan konfirmasi sebelum keluar.
   function handleLogout() {
     Alert.alert('Logout', 'Apakah kamu yakin ingin logout?', [
       { text: 'Batal', style: 'cancel' },
@@ -56,6 +60,7 @@ export default function ProfileScreen() {
     ]);
   }
 
+  // Menampilkan status loading saat data pengguna belum siap.
   if (!user) {
     return (
       <View style={styles.center}>
@@ -64,6 +69,7 @@ export default function ProfileScreen() {
     );
   }
 
+  // Tampilan utama halaman profil.
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.scrollContent}>
       <View style={styles.profileCard}>
@@ -96,37 +102,35 @@ export default function ProfileScreen() {
           </Pressable>
         </Link>
 
-        <View style={styles.backendDebugSection}>
-          <Text style={styles.sectionTitle}>Debug Backend</Text>
-          <Text style={styles.debugText}>Server aktif:</Text>
-          <Text style={styles.backendStatusText}>{getBackendLabel(currentBackendUrl)}</Text>
-          <Text style={styles.debugText}>URL saat ini:</Text>
-          <Text style={styles.backendUrlText}>{currentBackendUrl ?? 'Memuat...'}</Text>
+        {showBackendDebugSection && (
+          <View style={styles.backendDebugSection}>
+            <Text style={styles.sectionTitle}>Debug Backend</Text>
+            <Text style={styles.debugText}>Server aktif:</Text>
+            <Text style={styles.backendStatusText}>{getBackendLabel(currentBackendUrl)}</Text>
+            <Text style={styles.debugText}>URL saat ini:</Text>
+            <Text style={styles.backendUrlText}>{currentBackendUrl ?? 'Memuat...'}</Text>
 
-          {showBackendDebugButtons && (
-            <>
-              <Pressable
-                style={styles.debugButton}
-                onPress={async () => {
-                  await setBackendUrl('https://habittrackerv2-production.up.railway.app');
-                  setCurrentBackendUrl(await getBackendUrl());
-                }}
-              >
-                <Text style={styles.debugButtonText}>Pakai Railway</Text>
-              </Pressable>
+            <Pressable
+              style={styles.debugButton}
+              onPress={async () => {
+                await setBackendUrl('https://habittrackerv2-production.up.railway.app');
+                setCurrentBackendUrl(await getBackendUrl());
+              }}
+            >
+              <Text style={styles.debugButtonText}>Pakai Railway</Text>
+            </Pressable>
 
-              <Pressable
-                style={[styles.debugButton, styles.clearButton]}
-                onPress={async () => {
-                  await clearBackendUrl();
-                  setCurrentBackendUrl(await getBackendUrl());
-                }}
-              >
-                <Text style={styles.debugButtonText}>Kembali ke HuggingFace</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+            <Pressable
+              style={[styles.debugButton, styles.clearButton]}
+              onPress={async () => {
+                await clearBackendUrl();
+                setCurrentBackendUrl(await getBackendUrl());
+              }}
+            >
+              <Text style={styles.debugButtonText}>Kembali ke HuggingFace</Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.achievementsSection}>
           <Text style={styles.sectionTitle}>Achievements</Text>

@@ -98,9 +98,6 @@ export default function HomeScreen() {
     () => habits.filter(habit => habit.type === 'progress' && habit.completed).length,
     [habits]
   );
-  // Menghitung persentase progres dari habit yang sudah selesai dibandingkan total habit yang ada.
-  const progressPercent = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
-
   // Menentukan status habit yang tampil di kartu, misalnya Aktif, Cooldown, atau Siap.
   const getHabitStatus = (habit: any) => {
     if (habit.type !== 'progress') {
@@ -139,12 +136,7 @@ export default function HomeScreen() {
           <Text style={styles.statLabel}>Selesai</Text>
           <Text style={styles.statValue}>{completedCount}</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Progres</Text>
-          <Text style={styles.statValue}>{progressPercent}%</Text>
-        </View>
       </View>
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Habit Saya</Text>
         <Text style={styles.sectionSubtitle}>{habits.length} Habit Terpantau</Text>
