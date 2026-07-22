@@ -13,7 +13,6 @@ export default function ProfileScreen() {
   // State untuk menyimpan URL backend yang sedang digunakan.
   const [currentBackendUrl, setCurrentBackendUrl] = useState<string | null>(null);
   const { clearAuth, userId } = useAuthStore();
-  const showBackendDebugSection = __DEV__;
 
   const getBackendLabel = (url: string | null) => {
     if (!url) return 'Memuat...';
@@ -101,36 +100,6 @@ export default function ProfileScreen() {
             <Text style={styles.achievementsButtonText}>Lihat achievements</Text>
           </Pressable>
         </Link>
-
-        {showBackendDebugSection && (
-          <View style={styles.backendDebugSection}>
-            <Text style={styles.sectionTitle}>Debug Backend</Text>
-            <Text style={styles.debugText}>Server aktif:</Text>
-            <Text style={styles.backendStatusText}>{getBackendLabel(currentBackendUrl)}</Text>
-            <Text style={styles.debugText}>URL saat ini:</Text>
-            <Text style={styles.backendUrlText}>{currentBackendUrl ?? 'Memuat...'}</Text>
-
-            <Pressable
-              style={styles.debugButton}
-              onPress={async () => {
-                await setBackendUrl('https://habittrackerv2-production.up.railway.app');
-                setCurrentBackendUrl(await getBackendUrl());
-              }}
-            >
-              <Text style={styles.debugButtonText}>Pakai Railway</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.debugButton, styles.clearButton]}
-              onPress={async () => {
-                await clearBackendUrl();
-                setCurrentBackendUrl(await getBackendUrl());
-              }}
-            >
-              <Text style={styles.debugButtonText}>Kembali ke HuggingFace</Text>
-            </Pressable>
-          </View>
-        )}
 
         <View style={styles.achievementsSection}>
           <Text style={styles.sectionTitle}>Achievements</Text>
