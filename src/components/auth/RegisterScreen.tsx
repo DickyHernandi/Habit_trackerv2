@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
@@ -50,6 +51,8 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         const validation = await validateToken(result.token);
         console.log('[RegisterScreen] validateToken result', validation);
         if (validation.success) {
+          await AsyncStorage.removeItem('hasSeenTutorial');
+          await AsyncStorage.setItem('pendingTutorial', 'true');
           setAuth(result.userId, result.username, result.token);
           Alert.alert('Berhasil', `Selamat datang, ${result.username}!`);
         }

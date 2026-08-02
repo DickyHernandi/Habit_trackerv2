@@ -1,8 +1,10 @@
 import { AuthModal } from '@/components/auth/AuthModal';
+import { TutorialScreen } from '@/components/tutorial/TutorialScreen';
 import { registerDeviceToken } from '@/services/authService';
 import { getBackendUrl } from '@/services/backendConfig';
 import { reconcileMissedProgressHabitsForUser } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { Slot, useRouter } from 'expo-router';
@@ -16,6 +18,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, restoreSession } = useAuthStore();
   const [authChecked, setAuthChecked] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const notificationInitialized = useRef(false);
   const router = useRouter();
 
@@ -70,7 +73,13 @@ export default function RootLayout() {
     try {
       await restoreSession();
       const userId = useAuthStore.getState().userId;
-      console.log('[Frontend] checkAuth: sesi dipulihkan', { userId });
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const hasSeenTutorial = await AsyncStorage.getItem('hasSeenTutorial');
+      const shouldShowTutorial = !useAuthStore.getState().isAuthenticated && !storedToken && hasSeenTutorial !== 'true';
+
+      console.log('[Frontend] checkAuth: sesi dipulihkan', { userId, storedToken: Boolean(storedToken), shouldShowTutorial });
+      setShowTutorial(shouldShowTutorial);
+
       if (userId) {
         const BACKEND_URL = await getBackendUrl();
         try {
@@ -146,16 +155,43 @@ export default function RootLayout() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    async function syncTutorialState() {
+      if (!isAuthenticated) {
+        setShowTutorial(false);
+        return;
+      }
+
+      const pendingTutorial = await AsyncStorage.getItem('pendingTutorial');
+      const hasSeenTutorial = await AsyncStorage.getItem('hasSeenTutorial');
+      setShowTutorial(pendingTutorial === 'true' && hasSeenTutorial !== 'true');
+    }
+
+    syncTutorialState();
+  }, [isAuthenticated]);
+
+  async function handleTutorialComplete() {
+    await AsyncStorage.setItem('hasSeenTutorial', 'true');
+    await AsyncStorage.removeItem('pendingTutorial');
+    setShowTutorial(false);
+  }
+
   if (!authChecked) {
     return null;
   }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      {/* Tampilkan modal login jika user belum terautentikasi. */}
-      <AuthModal visible={!isAuthenticated} />
-      {/* Render halaman yang sesuai hanya jika user sudah login. */}
-      {isAuthenticated && <Slot />}
+      {showTutorial ? (
+        <TutorialScreen onComplete={handleTutorialComplete} onSkip={handleTutorialComplete} />
+      ) : (
+        <>
+          {/* Tampilkan modal login jika user belum terautentikasi. */}
+          <AuthModal visible={!isAuthenticated} />
+          {/* Render halaman yang sesuai hanya jika user sudah login. */}
+          {isAuthenticated && <Slot />}
+        </>
+      )}
     </ThemeProvider>
   );
 }
